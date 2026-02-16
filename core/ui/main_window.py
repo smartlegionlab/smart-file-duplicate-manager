@@ -7,10 +7,10 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QLineEdit, QComboBox, QCheckBox,
     QTreeWidget, QTreeWidgetItem, QProgressBar, QMessageBox,
     QFileDialog, QSplitter, QFrame, QHeaderView, QAbstractItemView,
-    QGroupBox, QGridLayout, QScrollArea
+    QGroupBox, QGridLayout, QScrollArea, QSpinBox
 )
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QAction, QKeySequence
+from PyQt6.QtCore import Qt, QRegularExpression
+from PyQt6.QtGui import QFont, QAction, QKeySequence, QRegularExpressionValidator
 
 from core.models.config import Config
 from core.models.dupe_group import DuplicateGroup
@@ -75,8 +75,9 @@ class MainWindow(QMainWindow):
         left_scroll.setMaximumWidth(350)
 
         center_right_splitter = QSplitter(Qt.Orientation.Horizontal)
-        center_right_splitter.setHandleWidth(1)
+        center_right_splitter.setHandleWidth(5)
         center_right_splitter.setChildrenCollapsible(False)
+        center_right_splitter.setStyleSheet("QSplitter::handle { background-color: #404040; }")
 
         center_scroll = QScrollArea()
         center_scroll.setWidgetResizable(True)
@@ -95,8 +96,9 @@ class MainWindow(QMainWindow):
         center_right_splitter.setSizes([500, 500])
 
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
-        main_splitter.setHandleWidth(1)
+        main_splitter.setHandleWidth(5)
         main_splitter.setChildrenCollapsible(False)
+        main_splitter.setStyleSheet("QSplitter::handle { background-color: #404040; }")
         main_splitter.addWidget(left_scroll)
         main_splitter.addWidget(center_right_splitter)
         main_splitter.setSizes([300, 900])
@@ -215,6 +217,7 @@ class MainWindow(QMainWindow):
         filters_layout.addWidget(QLabel("Min size (bytes):"), 0, 0)
         self.min_size_edit = QLineEdit()
         self.min_size_edit.setPlaceholderText("0")
+        self.min_size_edit.setValidator(QRegularExpressionValidator(QRegularExpression("[0-9]*")))
         self.min_size_edit.textChanged.connect(
             lambda t: self.state.update({'min_size': int(t) if t else 0})
         )
@@ -223,6 +226,7 @@ class MainWindow(QMainWindow):
         filters_layout.addWidget(QLabel("Max size (bytes):"), 1, 0)
         self.max_size_edit = QLineEdit()
         self.max_size_edit.setPlaceholderText("No limit")
+        self.max_size_edit.setValidator(QRegularExpressionValidator(QRegularExpression("[0-9]*")))
         self.max_size_edit.textChanged.connect(
             lambda t: self.state.update({'max_size': int(t) if t else 1 << 40})
         )
@@ -241,12 +245,12 @@ class MainWindow(QMainWindow):
         filters_layout.addWidget(self.exclude_edit, 3, 1)
 
         filters_layout.addWidget(QLabel("Threads:"), 4, 0)
-        self.threads_edit = QLineEdit()
-        self.threads_edit.setText(str(self.state['threads']))
-        self.threads_edit.textChanged.connect(
-            lambda t: self.state.update({'threads': int(t) if t else os.cpu_count()})
-        )
-        filters_layout.addWidget(self.threads_edit, 4, 1)
+        self.threads_spin = QSpinBox()
+        self.threads_spin.setMinimum(1)
+        self.threads_spin.setMaximum(os.cpu_count() * 2 or 8)
+        self.threads_spin.setValue(self.state['threads'])
+        self.threads_spin.valueChanged.connect(lambda v: self.state.update({'threads': v}))
+        filters_layout.addWidget(self.threads_spin, 4, 1)
 
         self.dry_run_check = QCheckBox("Test mode (don't move/delete files)")
         self.dry_run_check.toggled.connect(lambda b: self.state.update({'dry_run': b}))
@@ -378,8 +382,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(files_label)
 
         self.files_tree = QTreeWidget()
-        self.files_tree.setHeaderLabels(["", "File Path", "Size", "Date"])
-        self.files_tree.header().setSectionResizeMode(1, QHeaderView.ResizeMode.Interactive)
+        self.files_tree.setHeaderLabels(["", "File Name", "Size", "Date"])
+        self.files_tree.header().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.files_tree.setAlternatingRowColors(True)
         self.files_tree.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.files_tree.itemChanged.connect(self.on_file_check_changed)
@@ -556,6 +560,14 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", "Scan folder does not exist!")
             return
 
+        reply = QMessageBox.question(
+            self, "Confirm Scan",
+            f"Start scanning folder:\n{self.state['root_path']}\n\nThis may take some time depending on the number of files.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
         self.scan_btn.setEnabled(False)
         self.reset_btn.setEnabled(False)
         self.move_btn.setEnabled(False)
@@ -604,6 +616,14 @@ class MainWindow(QMainWindow):
 
     def cancel_scan(self):
         if self.scan_worker and self.scan_worker.isRunning():
+            reply = QMessageBox.question(
+                self, "Confirm Cancel",
+                "Cancel current scan?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+
             self.scan_worker.stop()
             self.scan_worker.wait()
             self.scan_worker = None
@@ -753,7 +773,7 @@ class MainWindow(QMainWindow):
             item = QTreeWidgetItem()
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
             item.setCheckState(0, Qt.CheckState.Checked if file.selected else Qt.CheckState.Unchecked)
-            item.setText(1, file.path)
+            item.setText(1, file.name)
             item.setText(2, file.size_str)
             item.setText(3, file.date_str)
             item.setData(0, Qt.ItemDataRole.UserRole, file)
@@ -815,16 +835,32 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Info", "This file is already the main file")
             return
 
+        reply = QMessageBox.question(
+            self, "Confirm Change",
+            f"Set '{file.name}' as the main file?\n\nThis file will be kept, others will remain as duplicates.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
         for f in self.current_group.files:
             f.is_main = (f.path == file.path)
         self.current_group.main_file = file
 
         self.on_group_selected()
-        self.status_label.setText(f"Main file changed to: {os.path.basename(file.path)}")
+        self.status_label.setText(f"Main file changed to: {file.name}")
 
     def select_all_in_group(self):
         if not self.current_group:
             QMessageBox.warning(self, "Warning", "No group selected")
+            return
+
+        reply = QMessageBox.question(
+            self, "Confirm Selection",
+            "Select all duplicates in this group?\n\nThe main file will remain unselected.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply != QMessageBox.StandardButton.Yes:
             return
 
         for file in self.current_group.files:
@@ -839,6 +875,14 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Warning", "No group selected")
             return
 
+        reply = QMessageBox.question(
+            self, "Confirm Deselection",
+            "Deselect all duplicates in this group?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
         for file in self.current_group.files:
             if not file.is_main:
                 file.selected = False
@@ -848,6 +892,14 @@ class MainWindow(QMainWindow):
 
     def select_all_duplicates(self):
         if not self.state['groups']:
+            return
+
+        reply = QMessageBox.question(
+            self, "Confirm Selection",
+            f"Select all duplicate files across {len(self.state['groups'])} groups?\n\nMain files will remain unselected.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply != QMessageBox.StandardButton.Yes:
             return
 
         selected_count = 0
@@ -868,6 +920,14 @@ class MainWindow(QMainWindow):
 
     def deselect_all(self):
         if not self.state['groups']:
+            return
+
+        reply = QMessageBox.question(
+            self, "Confirm Deselection",
+            f"Deselect all duplicate files across {len(self.state['groups'])} groups?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply != QMessageBox.StandardButton.Yes:
             return
 
         for group in self.state['groups']:
@@ -899,16 +959,21 @@ class MainWindow(QMainWindow):
             )
             return
 
+        action_name = "Move" if action == "move" else "Delete"
         action_past = "moved" if action == "move" else "deleted"
 
+        warning = ""
         if action == "delete":
-            reply = QMessageBox.question(
-                self, "Confirm Delete",
-                f"PERMANENTLY delete {total_selected} selected duplicates?\nThis cannot be undone!",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-            )
-            if reply != QMessageBox.StandardButton.Yes:
-                return
+            warning = "\n\nWARNING: This action cannot be undone!"
+
+        reply = QMessageBox.question(
+            self, f"Confirm {action_name}",
+            f"{action_name} {total_selected} selected duplicate files?\n\n"
+            f"Files will be {action_past} to: {self.state['dupes_folder']}{warning}",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
 
         target_folder = None
         if not self.state['dry_run'] and action == "move":
