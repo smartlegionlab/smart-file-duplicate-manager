@@ -100,7 +100,7 @@ class MainWindow(QMainWindow):
         left_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_panel = self.create_left_panel()
         left_scroll.setWidget(left_panel)
-        left_scroll.setMaximumWidth(350)
+        left_scroll.setMaximumWidth(450)
 
         center_right_splitter = QSplitter(Qt.Orientation.Horizontal)
         center_right_splitter.setHandleWidth(5)

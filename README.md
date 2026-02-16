@@ -1,4 +1,4 @@
-# Smart Duplicate Cleaner <sup>v1.0.2</sup>
+# Smart Duplicate Cleaner <sup>v1.0.3</sup>
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/smartlegionlab/smart-duplicate-cleaner-python)](https://github.com/smartlegionlab/smart-duplicate-cleaner-python/)
 ![GitHub top language](https://img.shields.io/github/languages/top/smartlegionlab/smart-duplicate-cleaner-python)
