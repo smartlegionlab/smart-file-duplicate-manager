@@ -23,6 +23,7 @@ class ScanWorker(QThread):
         self.exclude_ext = exclude_ext
         self.threads = threads
         self.is_running = True
+        self.last_update_time = time.time()
 
     def stop(self):
         self.is_running = False
@@ -72,8 +73,11 @@ class ScanWorker(QThread):
         files_by_size = {}
         file_mod_times = {}
         total_files = 0
+        self.last_update_time = time.time()
 
         try:
+            self.progress_updated.emit(0, 0, "Scanning directory structure...")
+
             for root, dirs, files in os.walk(self.root_path):
                 if not self.is_running:
                     return
@@ -101,11 +105,17 @@ class ScanWorker(QThread):
                         file_mod_times[path] = stat.st_mtime
                         total_files += 1
 
-                        if total_files % 100 == 0:
-                            self.progress_updated.emit(total_files, 0, f"Found {total_files} files")
+                        current_time = time.time()
+                        if total_files % 10 == 0 or current_time - self.last_update_time > 0.5:
+                            self.progress_updated.emit(total_files, 0,
+                                                       f"Scanning files... Found {total_files} files")
+                            self.last_update_time = current_time
 
                     except (OSError, IOError):
                         continue
+
+            self.progress_updated.emit(total_files, 0,
+                                       f"Scan complete. Found {total_files} total files")
 
             total_to_hash = sum(len(paths) for paths in files_by_size.values() if len(paths) > 1)
 
@@ -113,7 +123,8 @@ class ScanWorker(QThread):
                 self.scan_finished.emit({}, time.time() - start_time)
                 return
 
-            self.progress_updated.emit(0, total_to_hash, f"Hashing {total_to_hash} files...")
+            self.progress_updated.emit(0, total_to_hash,
+                                       f"Starting hashing of {total_to_hash} files...")
 
             hash_jobs = []
             for size, paths in files_by_size.items():
@@ -123,6 +134,7 @@ class ScanWorker(QThread):
 
             results = {}
             processed = 0
+            self.last_update_time = time.time()
 
             with ThreadPoolExecutor(max_workers=self.threads) as executor:
                 future_to_path = {
@@ -142,8 +154,16 @@ class ScanWorker(QThread):
                         results.setdefault(hash_value, []).append((path, size, mod_time))
 
                     processed += 1
-                    if processed % 10 == 0:
-                        self.progress_updated.emit(processed, total_to_hash, f"Hashing: {processed}/{total_to_hash}")
+
+                    current_time = time.time()
+                    if processed % 2 == 0 or current_time - self.last_update_time > 0.3:
+                        filename = os.path.basename(path)
+                        percent = int(processed * 100 / total_to_hash)
+                        self.progress_updated.emit(
+                            processed, total_to_hash,
+                            f"Hashing: {processed}/{total_to_hash} ({percent}%) - {filename}"
+                        )
+                        self.last_update_time = current_time
 
             if self.is_running:
                 self.scan_finished.emit(results, time.time() - start_time)
