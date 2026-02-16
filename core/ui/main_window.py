@@ -45,6 +45,9 @@ class MainWindow(QMainWindow):
         }
         self.config = Config()
 
+        self.current_group = None
+        self.scan_worker = None
+
         self.setup_ui()
         self.setup_menu()
 
@@ -293,11 +296,13 @@ class MainWindow(QMainWindow):
 
         self.stats_total_label = QLabel("Files: -")
         self.stats_dupes_label = QLabel("Duplicates: -")
+        self.stats_groups_label = QLabel("Groups: -")
         self.stats_space_label = QLabel("Space to free: -")
         self.stats_time_label = QLabel("Time: -")
 
         stats_layout.addWidget(self.stats_total_label)
         stats_layout.addWidget(self.stats_dupes_label)
+        stats_layout.addWidget(self.stats_groups_label)
         stats_layout.addWidget(self.stats_space_label)
         stats_layout.addWidget(self.stats_time_label)
 
@@ -354,12 +359,15 @@ class MainWindow(QMainWindow):
 
         set_main_btn = QPushButton("Set as Main")
         set_main_btn.clicked.connect(self.set_as_main)
-
-        self.select_group_btn = QPushButton("Select All in Group")
-        self.select_group_btn.clicked.connect(self.select_all_in_group)
-
         group_btn_layout.addWidget(set_main_btn)
+
+        self.select_group_btn = QPushButton("Select All")
+        self.select_group_btn.clicked.connect(self.select_all_in_group)
         group_btn_layout.addWidget(self.select_group_btn)
+
+        self.deselect_group_btn = QPushButton("Deselect All")
+        self.deselect_group_btn.clicked.connect(self.deselect_all_in_group)
+        group_btn_layout.addWidget(self.deselect_group_btn)
 
         layout.addLayout(group_btn_layout)
 
@@ -371,7 +379,7 @@ class MainWindow(QMainWindow):
 
         self.files_tree = QTreeWidget()
         self.files_tree.setHeaderLabels(["", "File Path", "Size", "Date"])
-        self.files_tree.header().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.files_tree.header().setSectionResizeMode(1, QHeaderView.ResizeMode.Interactive)
         self.files_tree.setAlternatingRowColors(True)
         self.files_tree.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.files_tree.itemChanged.connect(self.on_file_check_changed)
@@ -555,7 +563,10 @@ class MainWindow(QMainWindow):
         self.cancel_btn.setVisible(True)
         self.select_all_btn.setEnabled(False)
         self.deselect_all_btn.setEnabled(False)
-        self.select_group_btn.setEnabled(False)
+        if hasattr(self, 'select_group_btn'):
+            self.select_group_btn.setEnabled(False)
+        if hasattr(self, 'deselect_group_btn'):
+            self.deselect_group_btn.setEnabled(False)
 
         self.state['is_scanning'] = True
         self.state['groups'] = []
@@ -603,7 +614,10 @@ class MainWindow(QMainWindow):
         self.cancel_btn.setVisible(False)
         self.select_all_btn.setEnabled(True)
         self.deselect_all_btn.setEnabled(True)
-        self.select_group_btn.setEnabled(True)
+        if hasattr(self, 'select_group_btn'):
+            self.select_group_btn.setEnabled(True)
+        if hasattr(self, 'deselect_group_btn'):
+            self.deselect_group_btn.setEnabled(True)
         self.progress_bar.setValue(0)
         self.progress_label.setText("")
         self.status_label.setText("Scan cancelled")
@@ -656,7 +670,6 @@ class MainWindow(QMainWindow):
         self.cancel_btn.setVisible(False)
         self.select_all_btn.setEnabled(True)
         self.deselect_all_btn.setEnabled(True)
-        self.select_group_btn.setEnabled(True)
 
         if self.state['groups']:
             self.move_btn.setEnabled(True)
@@ -688,6 +701,7 @@ class MainWindow(QMainWindow):
             f"Files: {self.state['total_files']} ({FileInfo._format_size(self.state['total_size'])})"
         )
         self.stats_dupes_label.setText(f"Duplicates: {self.state['duplicate_cnt']}")
+        self.stats_groups_label.setText(f"Groups: {len(self.state['groups'])}")
         self.stats_space_label.setText(
             f"Space to free: {FileInfo._format_size(self.state['duplicate_sum'])}"
         )
@@ -718,6 +732,7 @@ class MainWindow(QMainWindow):
             self.right_title.setText("Group Details")
             self.right_info.setText("")
             self.select_group_btn.setEnabled(False)
+            self.deselect_group_btn.setEnabled(False)
             return
 
         group = selected[0].data(0, Qt.ItemDataRole.UserRole)
@@ -732,6 +747,7 @@ class MainWindow(QMainWindow):
 
         self.files_tree.clear()
         self.select_group_btn.setEnabled(True)
+        self.deselect_group_btn.setEnabled(True)
 
         for file in group.files:
             item = QTreeWidgetItem()
@@ -741,6 +757,7 @@ class MainWindow(QMainWindow):
             item.setText(2, file.size_str)
             item.setText(3, file.date_str)
             item.setData(0, Qt.ItemDataRole.UserRole, file)
+            item.setToolTip(1, file.path)
 
             if file.is_main:
                 item.setIcon(1, self.style().standardIcon(self.style().StandardPixmap.SP_DialogApplyButton))
@@ -785,14 +802,17 @@ class MainWindow(QMainWindow):
 
     def set_as_main(self):
         if not self.current_group:
+            QMessageBox.warning(self, "Warning", "No group selected")
             return
 
         selected = self.files_tree.selectedItems()
         if not selected:
+            QMessageBox.warning(self, "Warning", "No file selected")
             return
 
         file = selected[0].data(0, Qt.ItemDataRole.UserRole)
         if file.is_main:
+            QMessageBox.information(self, "Info", "This file is already the main file")
             return
 
         for f in self.current_group.files:
@@ -804,6 +824,7 @@ class MainWindow(QMainWindow):
 
     def select_all_in_group(self):
         if not self.current_group:
+            QMessageBox.warning(self, "Warning", "No group selected")
             return
 
         for file in self.current_group.files:
@@ -811,7 +832,19 @@ class MainWindow(QMainWindow):
                 file.selected = True
 
         self.on_group_selected()
-        self.status_label.setText(f"Selected all duplicates in current group")
+        self.status_label.setText("Selected all duplicates in current group")
+
+    def deselect_all_in_group(self):
+        if not self.current_group:
+            QMessageBox.warning(self, "Warning", "No group selected")
+            return
+
+        for file in self.current_group.files:
+            if not file.is_main:
+                file.selected = False
+
+        self.on_group_selected()
+        self.status_label.setText("Deselected all duplicates in current group")
 
     def select_all_duplicates(self):
         if not self.state['groups']:
@@ -1016,17 +1049,22 @@ class MainWindow(QMainWindow):
         self.state['is_scanning'] = False
 
         self.current_group = None
-        self.search_edit.clear()
+        if hasattr(self, 'search_edit'):
+            self.search_edit.clear()
 
         self.groups_tree.clear()
         self.files_tree.clear()
 
         self.right_title.setText("Group Details")
         self.right_info.setText("")
-        self.select_group_btn.setEnabled(False)
+        if hasattr(self, 'select_group_btn'):
+            self.select_group_btn.setEnabled(False)
+        if hasattr(self, 'deselect_group_btn'):
+            self.deselect_group_btn.setEnabled(False)
 
         self.stats_total_label.setText("Files: -")
         self.stats_dupes_label.setText("Duplicates: -")
+        self.stats_groups_label.setText("Groups: -")
         self.stats_space_label.setText("Space to free: -")
         self.stats_time_label.setText("Time: -")
 
