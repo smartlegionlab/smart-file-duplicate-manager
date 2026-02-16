@@ -1,4 +1,4 @@
-# Smart Duplicate Cleaner <sup>v0.4.0</sup>
+# Smart Duplicate Cleaner <sup>v1.0.0</sup>
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/smartlegionlab/smart-duplicate-cleaner-python)](https://github.com/smartlegionlab/smart-duplicate-cleaner-python/)
 ![GitHub top language](https://img.shields.io/github/languages/top/smartlegionlab/smart-duplicate-cleaner-python)
@@ -15,7 +15,6 @@
 - Compare files by size, then by hash (xxHash, or MD5 if none)
 - Multi-threaded scanning (uses all available processor cores)
 - Filters by file size and extension
-- Exclude folders containing duplicates from scanning
 
 ### Duplicate Management
 - Automatically determines the primary file in each group based on the following strategy:
@@ -29,13 +28,11 @@
 
 ### File Actions
 - **Move** — duplicates are moved to the destination folder in a subfolder with the date and time. A JSON log with all information about the moved files is saved in the folder.
-- **Delete** — permanently deletes selected files (with confirmation)
-- **Test Mode** — simulates actions without actually moving/deleting
+- **Test Mode** — simulates actions without actually moving
 
 ### Restore
 - View all previously moved files from JSON logs
 - Selective file restore to their original folders
-- A backup is created during restore if the file already exists in the original folder
 - Automatic log update and deletion of empty folders
 
 ### Interface
@@ -80,31 +77,30 @@ python app.py
 2. If necessary, adjust filters and select a strategy.
 3. Click "Start Scan."
 4. After scanning is complete, select the desired files (or use "Select All").
-5. Select the action: "Move Selected" or "Delete Selected."
-6. To restore previously moved files, use the "Tools" → "Restore Files" menu.
+5. To restore previously moved files, use the "Tools" → "Restore Files" menu.
 
 ## Hotkeys
 
-| Action | Keys              |
-|----------|-------------------|
-| Select folder to scan | Ctrl+Shift+O      |
-| Select folder for duplicates | Ctrl+Shift+D      |
-| Start scan | Ctrl+R            |
-| Cancel scan | Ctrl+Shift+C      |
-| Reset | Ctrl+Shift+R      |
-| Exit | Ctrl+Q            |
-| Select all duplicates | Ctrl+A            |
-| Deselect all | Ctrl+Shift+A      |
-| Test mode | Ctrl+T            |
-| Show statistics | Ctrl+I            |
-| Clear search | Ctrl+L            |
-| Move selected | Ctrl+M            |
-| Delete selected | Ctrl+Shift+Delete |
-| Open duplicates folder | Ctrl+Shift+F      |
-| Hotkeys | Ctrl+/            |
-| About | Ctrl+H            |
-| Documentation | F1                |
-| Report a problem | Ctrl+Shift+I      |
+| Action                       | Keys         |
+|------------------------------|--------------|
+| Select folder to scan        | Ctrl+Shift+O |
+| Select folder for duplicates | Ctrl+Shift+D |
+| Start scan                   | Ctrl+R       |
+| Cancel scan                  | Ctrl+Shift+C |
+| Reset                        | Ctrl+X       |
+| Restore files                | Ctrl+Shift+R |
+| Exit                         | Ctrl+Q       |
+| Select all duplicates        | Ctrl+A       |
+| Deselect all                 | Ctrl+Shift+A |
+| Test mode                    | Ctrl+T       |
+| Show statistics              | Ctrl+I       |
+| Clear search                 | Ctrl+L       |
+| Move selected                | Ctrl+M       |
+| Open duplicates folder       | Ctrl+Shift+F |
+| Hotkeys                      | Ctrl+/       |
+| About                        | Ctrl+H       |
+| Documentation                | F1           |
+| Report a problem             | Ctrl+Shift+I |
 
 ---
 
@@ -112,12 +108,6 @@ python app.py
 
 **Alexander Suvorov**
 - GitHub: [@smartlegionlab](https://github.com/smartlegionlab)
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/smartlegionlab/smart-duplicate-cleaner-python/issues).
-
-## ⭐ Support
 
 If you find this tool useful, please consider giving it a star on GitHub!
 
@@ -226,4 +216,4 @@ THE USER IS STRONGLY ADVISED TO:
 
 ## 🖼️ Screenshot
 
-![Smart Duplicate Cleaner](https://github.com/smartlegionlab/smart-duplicate-cleaner/blob/master/data/images/smart-duplicate-cleaner.png)
+![Smart Duplicate Cleaner](https://github.com/smartlegionlab/smart-duplicate-cleaner-python/blob/master/data/images/smart-duplicate-cleaner.png)

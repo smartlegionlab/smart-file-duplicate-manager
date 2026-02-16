@@ -197,7 +197,7 @@ class MainWindow(QMainWindow):
         scan_layout.addWidget(strategy_label)
         scan_layout.addWidget(self.strategy_combo)
 
-        self.dry_run_check = QCheckBox("Test mode (don't move/delete files)")
+        self.dry_run_check = QCheckBox("Test mode (don't move files)")
         self.dry_run_check.toggled.connect(self.on_test_mode_changed)
         scan_layout.addWidget(self.dry_run_check)
 
@@ -327,13 +327,6 @@ class MainWindow(QMainWindow):
         self.move_btn.clicked.connect(lambda: self.process_duplicates("move"))
         action_layout.addWidget(self.move_btn)
 
-        self.delete_btn = QPushButton("Delete Selected")
-        self.delete_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_TrashIcon))
-        self.delete_btn.setProperty("class", "danger")
-        self.delete_btn.setEnabled(False)
-        self.delete_btn.clicked.connect(lambda: self.process_duplicates("delete"))
-        action_layout.addWidget(self.delete_btn)
-
         layout.addWidget(action_group)
 
         self.groups_tree = QTreeWidget()
@@ -450,7 +443,7 @@ class MainWindow(QMainWindow):
         file_menu.addAction(cancel_scan_action)
 
         reset_action = QAction("&Reset", self)
-        reset_action.setShortcut(QKeySequence("Ctrl+Shift+R"))
+        reset_action.setShortcut(QKeySequence("Ctrl+X"))
         reset_action.triggered.connect(self.reset_all)
         file_menu.addAction(reset_action)
 
@@ -495,18 +488,9 @@ class MainWindow(QMainWindow):
         move_action.triggered.connect(lambda: self.process_duplicates("move"))
         tools_menu.addAction(move_action)
 
-        delete_action = QAction("&Delete Selected Files", self)
-        delete_action.setShortcut(QKeySequence("Ctrl+Shift+Delete"))
-        delete_action.triggered.connect(lambda: self.process_duplicates("delete"))
-        tools_menu.addAction(delete_action)
-
-        tools_menu.addSeparator()
-        clean_action = QAction("&Clean Dupes Folder", self)
-        clean_action.triggered.connect(self.clean_duplicates_folder)
-        tools_menu.addAction(clean_action)
-
         tools_menu.addSeparator()
         restore_action = QAction("&Restore Files...", self)
+        restore_action.setShortcut(QKeySequence("Ctrl+Shift+R"))
         restore_action.triggered.connect(self.show_restore_dialog)
         tools_menu.addAction(restore_action)
 
@@ -602,7 +586,6 @@ class MainWindow(QMainWindow):
         self.scan_btn.setEnabled(False)
         self.reset_btn.setEnabled(False)
         self.move_btn.setEnabled(False)
-        self.delete_btn.setEnabled(False)
         self.cancel_btn.setVisible(True)
         self.select_all_btn.setEnabled(False)
         self.deselect_all_btn.setEnabled(False)
@@ -724,7 +707,6 @@ class MainWindow(QMainWindow):
 
         if self.state['groups']:
             self.move_btn.setEnabled(True)
-            self.delete_btn.setEnabled(True)
 
         self.progress_bar.setValue(self.progress_bar.maximum())
         status_msg = f"Scan complete. Found {len(self.state['groups'])} duplicate groups in {scan_time:.1f}s"
@@ -1002,24 +984,20 @@ class MainWindow(QMainWindow):
             )
             return
 
-        action_name = "Move" if action == "move" else "Delete"
-        action_past = "moved" if action == "move" else "deleted"
-
-        warning = ""
-        if action == "delete":
-            warning = "\n\nWARNING: This action cannot be undone!"
+        action_name = "Move"
+        action_past = "moved"
 
         reply = QMessageBox.question(
             self, f"Confirm {action_name}",
             f"{action_name} {total_selected} selected duplicate files?\n\n"
-            f"Files will be {action_past} to: {self.state['dupes_folder']}{warning}",
+            f"Files will be {action_past} to: {self.state['dupes_folder']}",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply != QMessageBox.StandardButton.Yes:
             return
 
         target_folder = None
-        if not self.state['dry_run'] and action == "move":
+        if not self.state['dry_run']:
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             target_folder = os.path.join(self.state['dupes_folder'], timestamp)
             try:
@@ -1042,30 +1020,26 @@ class MainWindow(QMainWindow):
 
                 if not self.state['dry_run']:
                     try:
-                        if action == "move":
-                            ext = os.path.splitext(main_file.path)[1]
-                            base = os.path.splitext(os.path.basename(main_file.path))[0]
-                            new_name = f"{base}_{i + 1}{ext}"
+                        ext = os.path.splitext(main_file.path)[1]
+                        base = os.path.splitext(os.path.basename(main_file.path))[0]
+                        new_name = f"{base}_{i + 1}{ext}"
+                        new_path = os.path.join(target_folder, new_name)
+
+                        counter = 1
+                        while os.path.exists(new_path):
+                            new_name = f"{base}_{i + 1}_{counter}{ext}"
                             new_path = os.path.join(target_folder, new_name)
+                            counter += 1
 
-                            counter = 1
-                            while os.path.exists(new_path):
-                                new_name = f"{base}_{i + 1}_{counter}{ext}"
-                                new_path = os.path.join(target_folder, new_name)
-                                counter += 1
+                        os.rename(file.path, new_path)
 
-                            os.rename(file.path, new_path)
-
-                            moved_files.append({
-                                'original_path': file.path,
-                                'new_path': new_path,
-                                'size': file.size,
-                                'group_hash': group.hash,
-                                'timestamp': datetime.now().isoformat()
-                            })
-
-                        elif action == "delete":
-                            os.remove(file.path)
+                        moved_files.append({
+                            'original_path': file.path,
+                            'new_path': new_path,
+                            'size': file.size,
+                            'group_hash': group.hash,
+                            'timestamp': datetime.now().isoformat()
+                        })
 
                         processed += 1
                         saved += group.size
@@ -1074,7 +1048,7 @@ class MainWindow(QMainWindow):
                         errors.append(f"{file.name}: {e}")
 
         log_file = None
-        if action == "move" and moved_files and not self.state['dry_run']:
+        if moved_files and not self.state['dry_run']:
             log_file = self.save_move_log(moved_files, target_folder)
 
         result_msg = (
@@ -1095,53 +1069,6 @@ class MainWindow(QMainWindow):
         self.status_label.setText(f"Processing complete. {processed} files {action_past}.")
 
         self.reset_all()
-
-    def clean_duplicates_folder(self):
-        if self.state['dry_run']:
-            QMessageBox.information(self, "Test Mode", "Test mode enabled - no files would be deleted")
-            return
-
-        folder = self.state['dupes_folder']
-        if not os.path.exists(folder):
-            QMessageBox.information(self, "Info", "Duplicates folder does not exist")
-            return
-
-        reply = QMessageBox.question(
-            self, "Confirm Cleanup",
-            f"PERMANENTLY delete ALL contents of:\n{folder}\n\nThis will remove all subfolders and files!\nThis cannot be undone!",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-
-        if reply != QMessageBox.StandardButton.Yes:
-            return
-
-        deleted = 0
-        errors = []
-
-        for root, dirs, files in os.walk(folder):
-            if root == folder:
-                continue
-
-            for name in files:
-                path = os.path.join(root, name)
-                try:
-                    os.remove(path)
-                    deleted += 1
-                except OSError as e:
-                    errors.append(f"{name}: {e}")
-
-            try:
-                if os.path.exists(root):
-                    os.rmdir(root)
-            except OSError:
-                pass
-
-        result_msg = f"Items deleted: {deleted}"
-        if errors:
-            result_msg += "\n\nErrors:\n" + "\n".join(errors)
-
-        self.status_label.setText(f"Cleaned {deleted} items from duplicates folder")
-        QMessageBox.information(self, "Cleanup Complete", result_msg)
 
     def open_dupes_folder(self):
         folder = self.state['dupes_folder']
@@ -1199,7 +1126,6 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(0)
 
         self.move_btn.setEnabled(False)
-        self.delete_btn.setEnabled(False)
         self.scan_btn.setEnabled(True)
         self.reset_btn.setEnabled(True)
         self.cancel_btn.setVisible(False)

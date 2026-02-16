@@ -68,7 +68,7 @@ class Config:
             <tr><td>Select Duplicates Folder</td><td style="color: #467fd4">Ctrl+Shift+D</td></tr>
             <tr><td>Start Scan</td><td style="color: #467fd4">Ctrl+R</td></tr>
             <tr><td>Cancel Scan</td><td style="color: #467fd4">Ctrl+Shift+C</td></tr>
-            <tr><td>Reset</td><td style="color: #467fd4">Ctrl+Shift+R</td></tr>
+            <tr><td>Reset</td><td style="color: #467fd4">Ctrl+X</td></tr>
             <tr><td>Exit</td><td style="color: #467fd4">Ctrl+Q</td></tr>
             <tr><td>Select All Duplicates</td><td style="color: #467fd4">Ctrl+A</td></tr>
             <tr><td>Deselect All</td><td style="color: #467fd4">Ctrl+Shift+A</td></tr>
@@ -76,7 +76,6 @@ class Config:
             <tr><td>Show Statistics</td><td style="color: #467fd4">Ctrl+I</td></tr>
             <tr><td>Clear Search</td><td style="color: #467fd4">Ctrl+L</td></tr>
             <tr><td>Move Selected Files</td><td style="color: #467fd4">Ctrl+M</td></tr>
-            <tr><td>Delete Selected Files</td><td style="color: #467fd4">Ctrl+Shift+Delete</td></tr>
             <tr><td>Open Dupes Folder</td><td style="color: #467fd4">Ctrl+Shift+F</td></tr>
             <tr><td>Keyboard Shortcuts</td><td style="color: #467fd4">Ctrl+/</td></tr>
             <tr><td>About</td><td style="color: #467fd4">Ctrl+H</td></tr>
