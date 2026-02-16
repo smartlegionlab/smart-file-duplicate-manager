@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 from datetime import datetime
 
@@ -928,7 +929,8 @@ class MainWindow(QMainWindow):
         if self.current_group:
             self.on_group_selected()
 
-        self.status_label.setText(f"Selected {selected_count} duplicate files across {len(self.state['groups'])} groups")
+        self.status_label.setText(
+            f"Selected {selected_count} duplicate files across {len(self.state['groups'])} groups")
         QMessageBox.information(
             self, "Success",
             f"Selected {selected_count} duplicate files across {len(self.state['groups'])} groups"
@@ -956,6 +958,24 @@ class MainWindow(QMainWindow):
 
         self.status_label.setText("All duplicates deselected")
         QMessageBox.information(self, "Success", "All files deselected")
+
+    def save_move_log(self, moved_files, target_folder):
+        log_data = {
+            'timestamp': datetime.now().isoformat(),
+            'target_folder': target_folder,
+            'files': moved_files,
+            'total_files': len(moved_files),
+            'total_size': sum(f['size'] for f in moved_files)
+        }
+
+        log_filename = os.path.join(target_folder, 'move_log.json')
+        try:
+            with open(log_filename, 'w', encoding='utf-8') as f:
+                json.dump(log_data, f, indent=2, ensure_ascii=False)
+            return log_filename
+        except Exception as e:
+            QMessageBox.warning(self, "Warning", f"Failed to save move log: {e}")
+            return None
 
     def process_duplicates(self, action):
         if not self.state['groups']:
@@ -1004,6 +1024,7 @@ class MainWindow(QMainWindow):
         processed = 0
         saved = 0
         errors = []
+        moved_files = []
 
         for group in self.state['groups']:
             main_file = group.main_file or self.select_main_file(group.files)
@@ -1028,6 +1049,14 @@ class MainWindow(QMainWindow):
 
                             os.rename(file.path, new_path)
 
+                            moved_files.append({
+                                'original_path': file.path,
+                                'new_path': new_path,
+                                'size': file.size,
+                                'group_hash': group.hash,
+                                'timestamp': datetime.now().isoformat()
+                            })
+
                         elif action == "delete":
                             os.remove(file.path)
 
@@ -1037,10 +1066,17 @@ class MainWindow(QMainWindow):
                     except (OSError, IOError) as e:
                         errors.append(f"{file.name}: {e}")
 
+        log_file = None
+        if action == "move" and moved_files and not self.state['dry_run']:
+            log_file = self.save_move_log(moved_files, target_folder)
+
         result_msg = (
             f"Files {action_past}: {processed}\n"
             f"Space freed: {FileInfo._format_size(saved)}"
         )
+
+        if log_file:
+            result_msg += f"\n\nMove log saved to:\n{log_file}"
 
         if errors:
             result_msg += "\n\nErrors:\n" + "\n".join(errors)

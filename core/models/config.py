@@ -5,8 +5,8 @@ class Config:
     version = ver
     doc_url = "https://github.com/smartlegionlab/smart-duplicate-cleaner-python"
     issue_url = "https://github.com/smartlegionlab/smart-duplicate-cleaner-python/issues"
-    about_text = """
-            <h2>Smart Duplicate Cleaner v0.5.0</h2>
+    about_text = f"""
+            <h2>Smart Duplicate Cleaner v{ver}</h2>
             <p>A powerful GUI application for finding and managing duplicate files.</p>
             <p>Built with Python and PyQt6.</p>
             <p><br></p>
