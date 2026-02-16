@@ -359,22 +359,6 @@ class MainWindow(QMainWindow):
         self.right_info.setWordWrap(True)
         layout.addWidget(self.right_info)
 
-        group_btn_layout = QHBoxLayout()
-
-        set_main_btn = QPushButton("Set as Main")
-        set_main_btn.clicked.connect(self.set_as_main)
-        group_btn_layout.addWidget(set_main_btn)
-
-        self.select_group_btn = QPushButton("Select All")
-        self.select_group_btn.clicked.connect(self.select_all_in_group)
-        group_btn_layout.addWidget(self.select_group_btn)
-
-        self.deselect_group_btn = QPushButton("Deselect All")
-        self.deselect_group_btn.clicked.connect(self.deselect_all_in_group)
-        group_btn_layout.addWidget(self.deselect_group_btn)
-
-        layout.addLayout(group_btn_layout)
-
         files_label = QLabel("Files:")
         files_font = QFont()
         files_font.setBold(True)
@@ -768,8 +752,6 @@ class MainWindow(QMainWindow):
             self.files_tree.clear()
             self.right_title.setText("Group Details")
             self.right_info.setText("")
-            self.select_group_btn.setEnabled(False)
-            self.deselect_group_btn.setEnabled(False)
             return
 
         group = selected[0].data(0, Qt.ItemDataRole.UserRole)
@@ -783,8 +765,6 @@ class MainWindow(QMainWindow):
         )
 
         self.files_tree.clear()
-        self.select_group_btn.setEnabled(True)
-        self.deselect_group_btn.setEnabled(True)
 
         for file in group.files:
             item = QTreeWidgetItem()
@@ -895,19 +875,6 @@ class MainWindow(QMainWindow):
         elif strategy == "longest":
             return max(files, key=lambda f: len(f.path))
         return min(files, key=lambda f: f.mod_time)
-
-    def set_as_main(self):
-        if not self.current_group:
-            QMessageBox.warning(self, "Warning", "No group selected")
-            return
-
-        selected = self.files_tree.selectedItems()
-        if not selected:
-            QMessageBox.warning(self, "Warning", "No file selected")
-            return
-
-        file = selected[0].data(0, Qt.ItemDataRole.UserRole)
-        self.set_file_as_main(file)
 
     def select_all_in_group(self):
         if not self.current_group:
@@ -1162,10 +1129,6 @@ class MainWindow(QMainWindow):
 
         self.right_title.setText("Group Details")
         self.right_info.setText("")
-        if hasattr(self, 'select_group_btn'):
-            self.select_group_btn.setEnabled(False)
-        if hasattr(self, 'deselect_group_btn'):
-            self.deselect_group_btn.setEnabled(False)
 
         self.stats_total_label.setText("Files: -")
         self.stats_dupes_label.setText("Duplicates: -")
