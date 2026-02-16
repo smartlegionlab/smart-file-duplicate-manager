@@ -355,9 +355,15 @@ class MainWindow(QMainWindow):
         self.right_title.setFont(title_font)
         layout.addWidget(self.right_title)
 
+        info_group = QGroupBox("Group Information")
+        info_layout = QVBoxLayout(info_group)
+        info_layout.setSpacing(5)
+
         self.right_info = QLabel("")
         self.right_info.setWordWrap(True)
-        layout.addWidget(self.right_info)
+        info_layout.addWidget(self.right_info)
+
+        layout.addWidget(info_group)
 
         files_label = QLabel("Files:")
         files_font = QFont()
@@ -579,10 +585,6 @@ class MainWindow(QMainWindow):
         self.select_all_btn.setEnabled(False)
         self.deselect_all_btn.setEnabled(False)
         self.dry_run_check.setEnabled(False)
-        if hasattr(self, 'select_group_btn'):
-            self.select_group_btn.setEnabled(False)
-        if hasattr(self, 'deselect_group_btn'):
-            self.deselect_group_btn.setEnabled(False)
 
         self.state['is_scanning'] = True
         self.state['groups'] = []
@@ -638,10 +640,6 @@ class MainWindow(QMainWindow):
         self.select_all_btn.setEnabled(True)
         self.deselect_all_btn.setEnabled(True)
         self.dry_run_check.setEnabled(True)
-        if hasattr(self, 'select_group_btn'):
-            self.select_group_btn.setEnabled(True)
-        if hasattr(self, 'deselect_group_btn'):
-            self.deselect_group_btn.setEnabled(True)
         self.progress_bar.setValue(0)
         self.status_label.setText("Scan cancelled")
 
@@ -759,9 +757,9 @@ class MainWindow(QMainWindow):
 
         self.right_title.setText(f"Group: {group.id}")
         self.right_info.setText(
-            f"Size: {group.size_str}\n"
-            f"Copies: {group.file_count}\n"
-            f"Total: {self.format_size(group.size * group.file_count)}"
+            f"• Size: {group.size_str}\n"
+            f"• Copies: {group.file_count}\n"
+            f"• Total: {self.format_size(group.size * group.file_count)}"
         )
 
         self.files_tree.clear()
