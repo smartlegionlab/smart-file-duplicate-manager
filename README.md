@@ -1,4 +1,4 @@
-# Smart Duplicate Cleaner v0.5.0
+# Smart Duplicate Cleaner v0.1.0
 
 **Smart Duplicate Cleaner** is a powerful GUI application for finding and managing duplicate files. Built with Python and PyQt6.
 

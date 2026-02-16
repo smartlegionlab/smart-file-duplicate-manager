@@ -50,6 +50,29 @@ class MainWindow(QMainWindow):
         self.setup_ui()
         self.setup_menu()
 
+    def closeEvent(self, event):
+        if self.state['is_scanning']:
+            reply = QMessageBox.question(
+                self, "Confirm Exit",
+                "Scan is in progress. Are you sure you want to exit?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                event.ignore()
+                return
+
+        if self.state['groups']:
+            reply = QMessageBox.question(
+                self, "Confirm Exit",
+                "Unsaved scan results will be lost. Are you sure you want to exit?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                event.ignore()
+                return
+
+        event.accept()
+
     def setup_ui(self):
         self.setWindowTitle(f"{self.config.app_name} v{self.config.version}")
         self.setMinimumSize(1200, 700)
@@ -171,6 +194,10 @@ class MainWindow(QMainWindow):
         scan_layout.addWidget(strategy_label)
         scan_layout.addWidget(self.strategy_combo)
 
+        self.dry_run_check = QCheckBox("Test mode (don't move/delete files)")
+        self.dry_run_check.toggled.connect(self.on_test_mode_changed)
+        scan_layout.addWidget(self.dry_run_check)
+
         scan_btn_layout = QHBoxLayout()
         self.scan_btn = QPushButton("Start Scan")
         self.scan_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_MediaPlay))
@@ -256,24 +283,6 @@ class MainWindow(QMainWindow):
         self.search_edit.textChanged.connect(self.filter_groups)
         layout.addWidget(self.search_edit)
 
-        selection_layout = QHBoxLayout()
-        self.select_all_btn = QPushButton("Select All")
-        self.select_all_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_DialogApplyButton))
-        self.select_all_btn.clicked.connect(self.select_all_duplicates)
-        selection_layout.addWidget(self.select_all_btn)
-
-        self.deselect_all_btn = QPushButton("Deselect All")
-        self.deselect_all_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_DialogResetButton))
-        self.deselect_all_btn.clicked.connect(self.deselect_all)
-        selection_layout.addWidget(self.deselect_all_btn)
-
-        layout.addLayout(selection_layout)
-
-        info_label = QLabel("Note: Main files are automatically selected based on strategy and cannot be selected/deselected.")
-        info_label.setWordWrap(True)
-        info_label.setStyleSheet(f"color: {ModernStyle.FG_MEDIUM}; font-size: 9pt; padding: 5px;")
-        layout.addWidget(info_label)
-
         stats_group = QGroupBox("Scan Statistics")
         stats_layout = QVBoxLayout(stats_group)
 
@@ -295,6 +304,19 @@ class MainWindow(QMainWindow):
         action_layout = QVBoxLayout(action_group)
         action_layout.setSpacing(5)
 
+        selection_layout = QHBoxLayout()
+        self.select_all_btn = QPushButton("Select All")
+        self.select_all_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_DialogApplyButton))
+        self.select_all_btn.clicked.connect(self.select_all_duplicates)
+        selection_layout.addWidget(self.select_all_btn)
+
+        self.deselect_all_btn = QPushButton("Deselect All")
+        self.deselect_all_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_DialogResetButton))
+        self.deselect_all_btn.clicked.connect(self.deselect_all)
+        selection_layout.addWidget(self.deselect_all_btn)
+
+        action_layout.addLayout(selection_layout)
+
         self.move_btn = QPushButton("Move Selected")
         self.move_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_ArrowRight))
         self.move_btn.setProperty("class", "warning")
@@ -310,10 +332,6 @@ class MainWindow(QMainWindow):
         action_layout.addWidget(self.delete_btn)
 
         layout.addWidget(action_group)
-
-        self.dry_run_check = QCheckBox("Test mode (don't move/delete files)")
-        self.dry_run_check.toggled.connect(self.on_test_mode_changed)
-        layout.addWidget(self.dry_run_check)
 
         self.groups_tree = QTreeWidget()
         self.groups_tree.setHeaderLabels(["Group", "Size", "Copies"])
@@ -408,11 +426,12 @@ class MainWindow(QMainWindow):
 
         file_menu = menubar.addMenu("&File")
         select_scan_action = QAction("&Select Scan Folder...", self)
-        select_scan_action.setShortcut(QKeySequence.StandardKey.Open)
+        select_scan_action.setShortcut(QKeySequence("Ctrl+Shift+O"))
         select_scan_action.triggered.connect(self.browse_scan_folder)
         file_menu.addAction(select_scan_action)
 
         select_dupes_action = QAction("Select &Duplicates Folder...", self)
+        select_dupes_action.setShortcut(QKeySequence("Ctrl+Shift+D"))
         select_dupes_action.triggered.connect(self.browse_dupes_folder)
         file_menu.addAction(select_dupes_action)
 
@@ -422,14 +441,25 @@ class MainWindow(QMainWindow):
         start_scan_action.triggered.connect(self.start_scan)
         file_menu.addAction(start_scan_action)
 
+        cancel_scan_action = QAction("&Cancel Scan", self)
+        cancel_scan_action.setShortcut(QKeySequence("Ctrl+Shift+C"))
+        cancel_scan_action.triggered.connect(self.cancel_scan)
+        file_menu.addAction(cancel_scan_action)
+
         reset_action = QAction("&Reset", self)
         reset_action.setShortcut(QKeySequence("Ctrl+Shift+R"))
         reset_action.triggered.connect(self.reset_all)
         file_menu.addAction(reset_action)
 
+        file_menu.addSeparator()
+        exit_action = QAction("E&xit", self)
+        exit_action.setShortcut(QKeySequence("Ctrl+Q"))
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+
         edit_menu = menubar.addMenu("&Edit")
         select_all_action = QAction("Select &All Duplicates", self)
-        select_all_action.setShortcut(QKeySequence.StandardKey.SelectAll)
+        select_all_action.setShortcut(QKeySequence("Ctrl+A"))
         select_all_action.triggered.connect(self.select_all_duplicates)
         edit_menu.addAction(select_all_action)
 
@@ -441,11 +471,13 @@ class MainWindow(QMainWindow):
         edit_menu.addSeparator()
         self.test_mode_action = QAction("&Test Mode", self)
         self.test_mode_action.setCheckable(True)
+        self.test_mode_action.setShortcut(QKeySequence("Ctrl+T"))
         self.test_mode_action.triggered.connect(self.on_test_mode_menu)
         edit_menu.addAction(self.test_mode_action)
 
         view_menu = menubar.addMenu("&View")
         stats_action = QAction("Show &Statistics", self)
+        stats_action.setShortcut(QKeySequence("Ctrl+I"))
         stats_action.triggered.connect(self.show_statistics)
         view_menu.addAction(stats_action)
 
@@ -461,31 +493,42 @@ class MainWindow(QMainWindow):
         tools_menu.addAction(move_action)
 
         delete_action = QAction("&Delete Selected Files", self)
-        delete_action.setShortcut(QKeySequence("Ctrl+D"))
+        delete_action.setShortcut(QKeySequence("Ctrl+Shift+Delete"))
         delete_action.triggered.connect(lambda: self.process_duplicates("delete"))
         tools_menu.addAction(delete_action)
 
         tools_menu.addSeparator()
         clean_action = QAction("&Clean Dupes Folder", self)
+        clean_action.setShortcut(QKeySequence("Ctrl+Shift+Del"))
         clean_action.triggered.connect(self.clean_duplicates_folder)
         tools_menu.addAction(clean_action)
 
         tools_menu.addSeparator()
         open_folder_action = QAction("&Open Dupes Folder", self)
+        open_folder_action.setShortcut(QKeySequence("Ctrl+Shift+F"))
         open_folder_action.triggered.connect(self.open_dupes_folder)
         tools_menu.addAction(open_folder_action)
 
         help_menu = menubar.addMenu("&Help")
+        shortcuts_action = QAction("&Keyboard Shortcuts", self)
+        shortcuts_action.setShortcut(QKeySequence("Ctrl+/"))
+        shortcuts_action.triggered.connect(self.show_shortcuts)
+        help_menu.addAction(shortcuts_action)
+
+        help_menu.addSeparator()
         about_action = QAction("&About", self)
+        about_action.setShortcut(QKeySequence("Ctrl+H"))
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
 
         docs_action = QAction("&Documentation", self)
+        docs_action.setShortcut(QKeySequence("F1"))
         docs_action.triggered.connect(self.open_documentation)
         help_menu.addAction(docs_action)
 
         help_menu.addSeparator()
         report_action = QAction("&Report Issue", self)
+        report_action.setShortcut(QKeySequence("Ctrl+Shift+I"))
         report_action.triggered.connect(self.report_issue)
         help_menu.addAction(report_action)
 
@@ -1134,6 +1177,40 @@ class MainWindow(QMainWindow):
         )
 
         QMessageBox.information(self, "Detailed Statistics", stats)
+
+    def show_shortcuts(self):
+        shortcuts_text = """
+        <h3>Keyboard Shortcuts</h3>
+        <table>
+        <tr><th>Action</th><th>Shortcut</th></tr>
+        <tr><td>Select Scan Folder</td><td>Ctrl+Shift+O</td></tr>
+        <tr><td>Select Duplicates Folder</td><td>Ctrl+Shift+D</td></tr>
+        <tr><td>Start Scan</td><td>Ctrl+R</td></tr>
+        <tr><td>Cancel Scan</td><td>Ctrl+Shift+C</td></tr>
+        <tr><td>Reset</td><td>Ctrl+Shift+R</td></tr>
+        <tr><td>Exit</td><td>Ctrl+Q</td></tr>
+        <tr><td>Select All Duplicates</td><td>Ctrl+A</td></tr>
+        <tr><td>Deselect All</td><td>Ctrl+Shift+A</td></tr>
+        <tr><td>Test Mode</td><td>Ctrl+T</td></tr>
+        <tr><td>Show Statistics</td><td>Ctrl+I</td></tr>
+        <tr><td>Clear Search</td><td>Ctrl+L</td></tr>
+        <tr><td>Move Selected Files</td><td>Ctrl+M</td></tr>
+        <tr><td>Delete Selected Files</td><td>Ctrl+Shift+Delete</td></tr>
+        <tr><td>Clean Dupes Folder</td><td>Ctrl+Shift+Del</td></tr>
+        <tr><td>Open Dupes Folder</td><td>Ctrl+Shift+F</td></tr>
+        <tr><td>Keyboard Shortcuts</td><td>Ctrl+/</td></tr>
+        <tr><td>About</td><td>Ctrl+H</td></tr>
+        <tr><td>Documentation</td><td>F1</td></tr>
+        <tr><td>Report Issue</td><td>Ctrl+Shift+I</td></tr>
+        </table>
+        """
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Keyboard Shortcuts")
+        msg.setText(shortcuts_text)
+        msg.setTextFormat(Qt.TextFormat.RichText)
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.exec()
 
     def show_about(self):
         QMessageBox.about(self, "About Smart Duplicate Cleaner", self.config.about_text)
