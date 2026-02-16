@@ -27,7 +27,6 @@ class MainWindow(QMainWindow):
             'root_path': str(Path.home()),
             'dupes_folder': str(Path.home() / 'duplicates'),
             'strategy': 'oldest',
-            'priority_folder': '',
             'min_size': 0,
             'max_size': 1 << 40,
             'include_ext': '',
@@ -165,28 +164,12 @@ class MainWindow(QMainWindow):
         self.strategy_combo = QComboBox()
         self.strategy_combo.addItems([
             "oldest", "newest", "smallest", "largest",
-            "shortest path", "longest path", "priority folder"
+            "shortest path", "longest path"
         ])
         self.strategy_combo.setCurrentText("oldest")
         self.strategy_combo.currentTextChanged.connect(self.on_strategy_changed)
         scan_layout.addWidget(strategy_label)
         scan_layout.addWidget(self.strategy_combo)
-
-        priority_label = QLabel("Priority folder:")
-        self.priority_edit = QLineEdit()
-        self.priority_edit.setPlaceholderText("Priority folder")
-        self.priority_edit.textChanged.connect(lambda t: self.state.update({'priority_folder': t}))
-
-        priority_btn = QPushButton()
-        priority_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_DirIcon))
-        priority_btn.setMaximumWidth(30)
-        priority_btn.clicked.connect(self.browse_priority_folder)
-
-        priority_layout = QHBoxLayout()
-        priority_layout.addWidget(self.priority_edit)
-        priority_layout.addWidget(priority_btn)
-        scan_layout.addWidget(priority_label)
-        scan_layout.addLayout(priority_layout)
 
         scan_btn_layout = QHBoxLayout()
         self.scan_btn = QPushButton("Start Scan")
@@ -251,10 +234,6 @@ class MainWindow(QMainWindow):
         self.threads_spin.setValue(self.state['threads'])
         self.threads_spin.valueChanged.connect(lambda v: self.state.update({'threads': v}))
         filters_layout.addWidget(self.threads_spin, 4, 1)
-
-        self.dry_run_check = QCheckBox("Test mode (don't move/delete files)")
-        self.dry_run_check.toggled.connect(lambda b: self.state.update({'dry_run': b}))
-        filters_layout.addWidget(self.dry_run_check, 5, 0, 1, 2)
 
         layout.addWidget(filters_group)
 
@@ -332,6 +311,10 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(action_group)
 
+        self.dry_run_check = QCheckBox("Test mode (don't move/delete files)")
+        self.dry_run_check.toggled.connect(self.on_test_mode_changed)
+        layout.addWidget(self.dry_run_check)
+
         self.groups_tree = QTreeWidget()
         self.groups_tree.setHeaderLabels(["Group", "Size", "Copies"])
         self.groups_tree.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
@@ -404,10 +387,6 @@ class MainWindow(QMainWindow):
         self.progress_bar.setTextVisible(True)
         layout.addWidget(self.progress_bar)
 
-        self.progress_label = QLabel("")
-        self.progress_label.setMinimumWidth(200)
-        layout.addWidget(self.progress_label)
-
         return panel
 
     def create_status_panel(self):
@@ -460,10 +439,10 @@ class MainWindow(QMainWindow):
         edit_menu.addAction(deselect_all_action)
 
         edit_menu.addSeparator()
-        test_mode_action = QAction("&Test Mode", self)
-        test_mode_action.setCheckable(True)
-        test_mode_action.triggered.connect(lambda b: self.state.update({'dry_run': b}))
-        edit_menu.addAction(test_mode_action)
+        self.test_mode_action = QAction("&Test Mode", self)
+        self.test_mode_action.setCheckable(True)
+        self.test_mode_action.triggered.connect(self.on_test_mode_menu)
+        edit_menu.addAction(self.test_mode_action)
 
         view_menu = menubar.addMenu("&View")
         stats_action = QAction("Show &Statistics", self)
@@ -532,25 +511,26 @@ class MainWindow(QMainWindow):
             self.state['dupes_folder'] = folder
             self.status_label.setText(f"Duplicates folder set to: {folder}")
 
-    def browse_priority_folder(self):
-        folder = QFileDialog.getExistingDirectory(
-            self, "Select Priority Folder", self.state['priority_folder'] or self.state['root_path']
-        )
-        if folder:
-            self.priority_edit.setText(folder)
-            self.state['priority_folder'] = folder
-            self.status_label.setText(f"Priority folder set to: {folder}")
-
     def on_strategy_changed(self, text):
         if text == "shortest path":
             self.state['strategy'] = "shortest"
         elif text == "longest path":
             self.state['strategy'] = "longest"
-        elif text == "priority folder":
-            self.state['strategy'] = "priority"
         else:
             self.state['strategy'] = text
         self.status_label.setText(f"Strategy changed to: {text}")
+
+    def on_test_mode_changed(self, checked):
+        self.state['dry_run'] = checked
+        self.test_mode_action.setChecked(checked)
+        status = "enabled" if checked else "disabled"
+        self.status_label.setText(f"Test mode {status}")
+
+    def on_test_mode_menu(self, checked):
+        self.state['dry_run'] = checked
+        self.dry_run_check.setChecked(checked)
+        status = "enabled" if checked else "disabled"
+        self.status_label.setText(f"Test mode {status}")
 
     def start_scan(self):
         if self.state['is_scanning']:
@@ -575,6 +555,7 @@ class MainWindow(QMainWindow):
         self.cancel_btn.setVisible(True)
         self.select_all_btn.setEnabled(False)
         self.deselect_all_btn.setEnabled(False)
+        self.dry_run_check.setEnabled(False)
         if hasattr(self, 'select_group_btn'):
             self.select_group_btn.setEnabled(False)
         if hasattr(self, 'deselect_group_btn'):
@@ -595,7 +576,6 @@ class MainWindow(QMainWindow):
         self.right_info.setText("")
 
         self.progress_bar.setValue(0)
-        self.progress_label.setText("Finding files...")
         self.status_label.setText("Scanning started...")
 
         self.scan_worker = ScanWorker(
@@ -634,19 +614,18 @@ class MainWindow(QMainWindow):
         self.cancel_btn.setVisible(False)
         self.select_all_btn.setEnabled(True)
         self.deselect_all_btn.setEnabled(True)
+        self.dry_run_check.setEnabled(True)
         if hasattr(self, 'select_group_btn'):
             self.select_group_btn.setEnabled(True)
         if hasattr(self, 'deselect_group_btn'):
             self.deselect_group_btn.setEnabled(True)
         self.progress_bar.setValue(0)
-        self.progress_label.setText("")
         self.status_label.setText("Scan cancelled")
 
     def on_scan_progress(self, current, total, message):
         if total > 0:
             self.progress_bar.setMaximum(total)
             self.progress_bar.setValue(current)
-        self.progress_label.setText(message)
         self.status_label.setText(message)
 
     def on_scan_finished(self, results, scan_time):
@@ -690,6 +669,7 @@ class MainWindow(QMainWindow):
         self.cancel_btn.setVisible(False)
         self.select_all_btn.setEnabled(True)
         self.deselect_all_btn.setEnabled(True)
+        self.dry_run_check.setEnabled(True)
 
         if self.state['groups']:
             self.move_btn.setEnabled(True)
@@ -697,7 +677,6 @@ class MainWindow(QMainWindow):
 
         self.progress_bar.setValue(self.progress_bar.maximum())
         status_msg = f"Scan complete. Found {len(self.state['groups'])} duplicate groups in {scan_time:.1f}s"
-        self.progress_label.setText(status_msg)
         self.status_label.setText(status_msg)
 
     def on_scan_error(self, error_msg):
@@ -812,12 +791,6 @@ class MainWindow(QMainWindow):
             return min(files, key=lambda f: len(f.path))
         elif strategy == "longest":
             return max(files, key=lambda f: len(f.path))
-        elif strategy == "priority" and self.state['priority_folder']:
-            priority = self.state['priority_folder']
-            for f in files:
-                if priority in f.path:
-                    return f
-            return min(files, key=lambda f: f.mod_time)
         return min(files, key=lambda f: f.mod_time)
 
     def set_as_main(self):
@@ -1134,7 +1107,6 @@ class MainWindow(QMainWindow):
         self.stats_time_label.setText("Time: -")
 
         self.progress_bar.setValue(0)
-        self.progress_label.setText("")
 
         self.move_btn.setEnabled(False)
         self.delete_btn.setEnabled(False)
@@ -1143,6 +1115,7 @@ class MainWindow(QMainWindow):
         self.cancel_btn.setVisible(False)
         self.select_all_btn.setEnabled(True)
         self.deselect_all_btn.setEnabled(True)
+        self.dry_run_check.setEnabled(True)
 
         self.status_label.setText("Ready - all data reset")
 
