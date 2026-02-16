@@ -101,11 +101,11 @@ class MainWindow(QMainWindow):
         content_layout.addWidget(main_splitter)
 
         progress_panel = self.create_progress_panel()
+        status_panel = self.create_status_panel()
 
         main_layout.addWidget(content)
         main_layout.addWidget(progress_panel)
-
-        self.statusBar().showMessage("Ready")
+        main_layout.addWidget(status_panel)
 
     def create_left_panel(self):
         panel = QWidget()
@@ -270,12 +270,20 @@ class MainWindow(QMainWindow):
         self.search_edit.textChanged.connect(self.filter_groups)
         layout.addWidget(self.search_edit)
 
-        self.select_all_btn = QPushButton("Select All Duplicates")
+        selection_layout = QHBoxLayout()
+        self.select_all_btn = QPushButton("Select All")
         self.select_all_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_DialogApplyButton))
         self.select_all_btn.clicked.connect(self.select_all_duplicates)
-        layout.addWidget(self.select_all_btn)
+        selection_layout.addWidget(self.select_all_btn)
 
-        info_label = QLabel("Note: Main files are automatically selected based on strategy. All other copies are pre-selected as duplicates.")
+        self.deselect_all_btn = QPushButton("Deselect All")
+        self.deselect_all_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_DialogResetButton))
+        self.deselect_all_btn.clicked.connect(self.deselect_all)
+        selection_layout.addWidget(self.deselect_all_btn)
+
+        layout.addLayout(selection_layout)
+
+        info_label = QLabel("Note: Main files are automatically selected based on strategy and cannot be selected/deselected.")
         info_label.setWordWrap(True)
         info_label.setStyleSheet(f"color: {ModernStyle.FG_MEDIUM}; font-size: 9pt; padding: 5px;")
         layout.addWidget(info_label)
@@ -348,8 +356,7 @@ class MainWindow(QMainWindow):
         set_main_btn.clicked.connect(self.set_as_main)
 
         self.select_group_btn = QPushButton("Select All in Group")
-        self.select_group_btn.setCheckable(True)
-        self.select_group_btn.clicked.connect(self.toggle_select_all_in_group)
+        self.select_group_btn.clicked.connect(self.select_all_in_group)
 
         group_btn_layout.addWidget(set_main_btn)
         group_btn_layout.addWidget(self.select_group_btn)
@@ -363,7 +370,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(files_label)
 
         self.files_tree = QTreeWidget()
-        self.files_tree.setHeaderLabels(["", "File", "Size", "Date"])
+        self.files_tree.setHeaderLabels(["", "File Path", "Size", "Date"])
         self.files_tree.header().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.files_tree.setAlternatingRowColors(True)
         self.files_tree.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
@@ -375,22 +382,33 @@ class MainWindow(QMainWindow):
 
     def create_progress_panel(self):
         panel = QWidget()
-        panel.setMaximumHeight(60)
-        layout = QVBoxLayout(panel)
-        layout.setSpacing(2)
+        panel.setMaximumHeight(40)
+        layout = QHBoxLayout(panel)
+        layout.setContentsMargins(10, 2, 10, 2)
 
-        progress_layout = QHBoxLayout()
-        progress_layout.addWidget(QLabel("Progress:"))
+        layout.addWidget(QLabel("Progress:"))
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setTextVisible(True)
-        progress_layout.addWidget(self.progress_bar)
+        layout.addWidget(self.progress_bar)
 
         self.progress_label = QLabel("")
-        self.progress_label.setMinimumWidth(150)
-        progress_layout.addWidget(self.progress_label)
+        self.progress_label.setMinimumWidth(200)
+        layout.addWidget(self.progress_label)
 
-        layout.addLayout(progress_layout)
+        return panel
+
+    def create_status_panel(self):
+        panel = QWidget()
+        panel.setMaximumHeight(25)
+        layout = QHBoxLayout(panel)
+        layout.setContentsMargins(10, 0, 10, 2)
+
+        self.status_label = QLabel("Ready")
+        self.status_label.setStyleSheet(f"color: {ModernStyle.FG_MEDIUM};")
+        layout.addWidget(self.status_label)
+
+        layout.addStretch()
 
         return panel
 
@@ -491,6 +509,7 @@ class MainWindow(QMainWindow):
         if folder:
             self.path_edit.setText(folder)
             self.state['root_path'] = folder
+            self.status_label.setText(f"Scan folder set to: {folder}")
 
     def browse_dupes_folder(self):
         folder = QFileDialog.getExistingDirectory(
@@ -499,6 +518,7 @@ class MainWindow(QMainWindow):
         if folder:
             self.dupes_folder_edit.setText(folder)
             self.state['dupes_folder'] = folder
+            self.status_label.setText(f"Duplicates folder set to: {folder}")
 
     def browse_priority_folder(self):
         folder = QFileDialog.getExistingDirectory(
@@ -507,6 +527,7 @@ class MainWindow(QMainWindow):
         if folder:
             self.priority_edit.setText(folder)
             self.state['priority_folder'] = folder
+            self.status_label.setText(f"Priority folder set to: {folder}")
 
     def on_strategy_changed(self, text):
         if text == "shortest path":
@@ -517,6 +538,7 @@ class MainWindow(QMainWindow):
             self.state['strategy'] = "priority"
         else:
             self.state['strategy'] = text
+        self.status_label.setText(f"Strategy changed to: {text}")
 
     def start_scan(self):
         if self.state['is_scanning']:
@@ -532,6 +554,7 @@ class MainWindow(QMainWindow):
         self.delete_btn.setEnabled(False)
         self.cancel_btn.setVisible(True)
         self.select_all_btn.setEnabled(False)
+        self.deselect_all_btn.setEnabled(False)
         self.select_group_btn.setEnabled(False)
 
         self.state['is_scanning'] = True
@@ -547,10 +570,10 @@ class MainWindow(QMainWindow):
         self.files_tree.clear()
         self.right_title.setText("Group Details")
         self.right_info.setText("")
-        self.select_group_btn.setChecked(False)
 
         self.progress_bar.setValue(0)
         self.progress_label.setText("Finding files...")
+        self.status_label.setText("Scanning started...")
 
         self.scan_worker = ScanWorker(
             self.state['root_path'],
@@ -579,15 +602,18 @@ class MainWindow(QMainWindow):
         self.reset_btn.setEnabled(True)
         self.cancel_btn.setVisible(False)
         self.select_all_btn.setEnabled(True)
+        self.deselect_all_btn.setEnabled(True)
         self.select_group_btn.setEnabled(True)
         self.progress_bar.setValue(0)
         self.progress_label.setText("")
+        self.status_label.setText("Scan cancelled")
 
     def on_scan_progress(self, current, total, message):
         if total > 0:
             self.progress_bar.setMaximum(total)
             self.progress_bar.setValue(current)
         self.progress_label.setText(message)
+        self.status_label.setText(message)
 
     def on_scan_finished(self, results, scan_time):
         self.state['is_scanning'] = False
@@ -629,6 +655,7 @@ class MainWindow(QMainWindow):
         self.reset_btn.setEnabled(True)
         self.cancel_btn.setVisible(False)
         self.select_all_btn.setEnabled(True)
+        self.deselect_all_btn.setEnabled(True)
         self.select_group_btn.setEnabled(True)
 
         if self.state['groups']:
@@ -636,10 +663,13 @@ class MainWindow(QMainWindow):
             self.delete_btn.setEnabled(True)
 
         self.progress_bar.setValue(self.progress_bar.maximum())
-        self.progress_label.setText(f"Found {len(self.state['groups'])} duplicate groups")
+        status_msg = f"Scan complete. Found {len(self.state['groups'])} duplicate groups in {scan_time:.1f}s"
+        self.progress_label.setText(status_msg)
+        self.status_label.setText(status_msg)
 
     def on_scan_error(self, error_msg):
         QMessageBox.critical(self, "Scan Error", f"An error occurred during scan:\n{error_msg}")
+        self.status_label.setText(f"Scan error: {error_msg}")
         self.cancel_scan()
 
     def refresh_ui(self):
@@ -687,7 +717,6 @@ class MainWindow(QMainWindow):
             self.files_tree.clear()
             self.right_title.setText("Group Details")
             self.right_info.setText("")
-            self.select_group_btn.setChecked(False)
             self.select_group_btn.setEnabled(False)
             return
 
@@ -703,13 +732,12 @@ class MainWindow(QMainWindow):
 
         self.files_tree.clear()
         self.select_group_btn.setEnabled(True)
-        self.select_group_btn.setChecked(False)
 
         for file in group.files:
             item = QTreeWidgetItem()
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
             item.setCheckState(0, Qt.CheckState.Checked if file.selected else Qt.CheckState.Unchecked)
-            item.setText(1, file.name)
+            item.setText(1, file.path)
             item.setText(2, file.size_str)
             item.setText(3, file.date_str)
             item.setData(0, Qt.ItemDataRole.UserRole, file)
@@ -732,19 +760,6 @@ class MainWindow(QMainWindow):
         file = item.data(0, Qt.ItemDataRole.UserRole)
         if file and not file.is_main:
             file.selected = (item.checkState(0) == Qt.CheckState.Checked)
-            self.update_select_group_button_state()
-
-    def update_select_group_button_state(self):
-        if not self.current_group:
-            return
-
-        all_selected = True
-        for file in self.current_group.files:
-            if not file.is_main and not file.selected:
-                all_selected = False
-                break
-
-        self.select_group_btn.setChecked(all_selected)
 
     def select_main_file(self, files):
         strategy = self.state['strategy']
@@ -785,18 +800,18 @@ class MainWindow(QMainWindow):
         self.current_group.main_file = file
 
         self.on_group_selected()
+        self.status_label.setText(f"Main file changed to: {os.path.basename(file.path)}")
 
-    def toggle_select_all_in_group(self):
+    def select_all_in_group(self):
         if not self.current_group:
             return
 
-        select_all = self.select_group_btn.isChecked()
-
         for file in self.current_group.files:
             if not file.is_main:
-                file.selected = select_all
+                file.selected = True
 
         self.on_group_selected()
+        self.status_label.setText(f"Selected all duplicates in current group")
 
     def select_all_duplicates(self):
         if not self.state['groups']:
@@ -805,14 +820,14 @@ class MainWindow(QMainWindow):
         selected_count = 0
         for group in self.state['groups']:
             for file in group.files:
-                if file != group.main_file:
+                if not file.is_main:
                     file.selected = True
                     selected_count += 1
 
         if self.current_group:
             self.on_group_selected()
-            self.update_select_group_button_state()
 
+        self.status_label.setText(f"Selected {selected_count} duplicate files across {len(self.state['groups'])} groups")
         QMessageBox.information(
             self, "Success",
             f"Selected {selected_count} duplicate files across {len(self.state['groups'])} groups"
@@ -829,8 +844,8 @@ class MainWindow(QMainWindow):
 
         if self.current_group:
             self.on_group_selected()
-            self.update_select_group_button_state()
 
+        self.status_label.setText("All duplicates deselected")
         QMessageBox.information(self, "Success", "All files deselected")
 
     def process_duplicates(self, action):
@@ -847,7 +862,7 @@ class MainWindow(QMainWindow):
         if total_selected == 0:
             QMessageBox.information(
                 self, "Info",
-                "No files selected for processing. Use 'Select All Dupes' button or manually select files."
+                "No files selected for processing. Use 'Select All' button or manually select files."
             )
             return
 
@@ -920,6 +935,7 @@ class MainWindow(QMainWindow):
             result_msg = f"TEST MODE - no files were actually {action_past}\n\n{result_msg}"
 
         QMessageBox.information(self, "Done", result_msg)
+        self.status_label.setText(f"Processing complete. {processed} files {action_past}.")
 
         self.reset_all()
 
@@ -967,6 +983,7 @@ class MainWindow(QMainWindow):
         if errors:
             result_msg += "\n\nErrors:\n" + "\n".join(errors)
 
+        self.status_label.setText(f"Cleaned {deleted} items from duplicates folder")
         QMessageBox.information(self, "Cleanup Complete", result_msg)
 
     def open_dupes_folder(self):
@@ -1006,7 +1023,6 @@ class MainWindow(QMainWindow):
 
         self.right_title.setText("Group Details")
         self.right_info.setText("")
-        self.select_group_btn.setChecked(False)
         self.select_group_btn.setEnabled(False)
 
         self.stats_total_label.setText("Files: -")
@@ -1023,6 +1039,9 @@ class MainWindow(QMainWindow):
         self.reset_btn.setEnabled(True)
         self.cancel_btn.setVisible(False)
         self.select_all_btn.setEnabled(True)
+        self.deselect_all_btn.setEnabled(True)
+
+        self.status_label.setText("Ready - all data reset")
 
     def show_statistics(self):
         if not self.state['groups']:
