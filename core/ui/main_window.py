@@ -295,6 +295,26 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(stats_group)
 
+        action_group = QGroupBox("Actions")
+        action_layout = QVBoxLayout(action_group)
+        action_layout.setSpacing(5)
+
+        self.move_btn = QPushButton("Move Selected")
+        self.move_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_ArrowRight))
+        self.move_btn.setProperty("class", "warning")
+        self.move_btn.setEnabled(False)
+        self.move_btn.clicked.connect(lambda: self.process_duplicates("move"))
+        action_layout.addWidget(self.move_btn)
+
+        self.delete_btn = QPushButton("Delete Selected")
+        self.delete_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_TrashIcon))
+        self.delete_btn.setProperty("class", "danger")
+        self.delete_btn.setEnabled(False)
+        self.delete_btn.clicked.connect(lambda: self.process_duplicates("delete"))
+        action_layout.addWidget(self.delete_btn)
+
+        layout.addWidget(action_group)
+
         self.groups_tree = QTreeWidget()
         self.groups_tree.setHeaderLabels(["Group", "Size", "Copies"])
         self.groups_tree.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
@@ -322,35 +342,17 @@ class MainWindow(QMainWindow):
         self.right_info.setWordWrap(True)
         layout.addWidget(self.right_info)
 
-        action_layout = QHBoxLayout()
-
-        self.move_btn = QPushButton("Move Selected")
-        self.move_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_ArrowRight))
-        self.move_btn.setProperty("class", "warning")
-        self.move_btn.setEnabled(False)
-        self.move_btn.clicked.connect(lambda: self.process_duplicates("move"))
-
-        self.delete_btn = QPushButton("Delete Selected")
-        self.delete_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_TrashIcon))
-        self.delete_btn.setProperty("class", "danger")
-        self.delete_btn.setEnabled(False)
-        self.delete_btn.clicked.connect(lambda: self.process_duplicates("delete"))
-
-        action_layout.addWidget(self.move_btn)
-        action_layout.addWidget(self.delete_btn)
-
-        layout.addLayout(action_layout)
-
         group_btn_layout = QHBoxLayout()
 
         set_main_btn = QPushButton("Set as Main")
         set_main_btn.clicked.connect(self.set_as_main)
 
-        select_group_btn = QPushButton("Select All in Group")
-        select_group_btn.clicked.connect(self.select_all_in_group)
+        self.select_group_btn = QPushButton("Select All in Group")
+        self.select_group_btn.setCheckable(True)
+        self.select_group_btn.clicked.connect(self.toggle_select_all_in_group)
 
         group_btn_layout.addWidget(set_main_btn)
-        group_btn_layout.addWidget(select_group_btn)
+        group_btn_layout.addWidget(self.select_group_btn)
 
         layout.addLayout(group_btn_layout)
 
@@ -365,6 +367,7 @@ class MainWindow(QMainWindow):
         self.files_tree.header().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.files_tree.setAlternatingRowColors(True)
         self.files_tree.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.files_tree.itemChanged.connect(self.on_file_check_changed)
 
         layout.addWidget(self.files_tree)
 
@@ -372,9 +375,9 @@ class MainWindow(QMainWindow):
 
     def create_progress_panel(self):
         panel = QWidget()
-        panel.setMaximumHeight(80)
+        panel.setMaximumHeight(60)
         layout = QVBoxLayout(panel)
-        layout.setSpacing(5)
+        layout.setSpacing(2)
 
         progress_layout = QHBoxLayout()
         progress_layout.addWidget(QLabel("Progress:"))
@@ -388,9 +391,6 @@ class MainWindow(QMainWindow):
         progress_layout.addWidget(self.progress_label)
 
         layout.addLayout(progress_layout)
-
-        self.status_label = QLabel("Ready")
-        layout.addWidget(self.status_label)
 
         return panel
 
@@ -532,6 +532,7 @@ class MainWindow(QMainWindow):
         self.delete_btn.setEnabled(False)
         self.cancel_btn.setVisible(True)
         self.select_all_btn.setEnabled(False)
+        self.select_group_btn.setEnabled(False)
 
         self.state['is_scanning'] = True
         self.state['groups'] = []
@@ -546,9 +547,9 @@ class MainWindow(QMainWindow):
         self.files_tree.clear()
         self.right_title.setText("Group Details")
         self.right_info.setText("")
+        self.select_group_btn.setChecked(False)
 
         self.progress_bar.setValue(0)
-        self.status_label.setText("Scanning...")
         self.progress_label.setText("Finding files...")
 
         self.scan_worker = ScanWorker(
@@ -578,8 +579,8 @@ class MainWindow(QMainWindow):
         self.reset_btn.setEnabled(True)
         self.cancel_btn.setVisible(False)
         self.select_all_btn.setEnabled(True)
+        self.select_group_btn.setEnabled(True)
         self.progress_bar.setValue(0)
-        self.status_label.setText("Scan cancelled")
         self.progress_label.setText("")
 
     def on_scan_progress(self, current, total, message):
@@ -628,13 +629,14 @@ class MainWindow(QMainWindow):
         self.reset_btn.setEnabled(True)
         self.cancel_btn.setVisible(False)
         self.select_all_btn.setEnabled(True)
+        self.select_group_btn.setEnabled(True)
 
         if self.state['groups']:
             self.move_btn.setEnabled(True)
             self.delete_btn.setEnabled(True)
 
-        self.status_label.setText(f"Scan complete. Found {len(self.state['groups'])} duplicate groups.")
         self.progress_bar.setValue(self.progress_bar.maximum())
+        self.progress_label.setText(f"Found {len(self.state['groups'])} duplicate groups")
 
     def on_scan_error(self, error_msg):
         QMessageBox.critical(self, "Scan Error", f"An error occurred during scan:\n{error_msg}")
@@ -685,6 +687,8 @@ class MainWindow(QMainWindow):
             self.files_tree.clear()
             self.right_title.setText("Group Details")
             self.right_info.setText("")
+            self.select_group_btn.setChecked(False)
+            self.select_group_btn.setEnabled(False)
             return
 
         group = selected[0].data(0, Qt.ItemDataRole.UserRole)
@@ -698,6 +702,8 @@ class MainWindow(QMainWindow):
         )
 
         self.files_tree.clear()
+        self.select_group_btn.setEnabled(True)
+        self.select_group_btn.setChecked(False)
 
         for file in group.files:
             item = QTreeWidgetItem()
@@ -710,12 +716,35 @@ class MainWindow(QMainWindow):
 
             if file.is_main:
                 item.setIcon(1, self.style().standardIcon(self.style().StandardPixmap.SP_DialogApplyButton))
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
+                item.setCheckState(0, Qt.CheckState.Unchecked)
 
             self.files_tree.addTopLevelItem(item)
 
         self.files_tree.resizeColumnToContents(0)
         self.files_tree.resizeColumnToContents(2)
         self.files_tree.resizeColumnToContents(3)
+
+    def on_file_check_changed(self, item, column):
+        if column != 0:
+            return
+
+        file = item.data(0, Qt.ItemDataRole.UserRole)
+        if file and not file.is_main:
+            file.selected = (item.checkState(0) == Qt.CheckState.Checked)
+            self.update_select_group_button_state()
+
+    def update_select_group_button_state(self):
+        if not self.current_group:
+            return
+
+        all_selected = True
+        for file in self.current_group.files:
+            if not file.is_main and not file.selected:
+                all_selected = False
+                break
+
+        self.select_group_btn.setChecked(all_selected)
 
     def select_main_file(self, files):
         strategy = self.state['strategy']
@@ -748,6 +777,8 @@ class MainWindow(QMainWindow):
             return
 
         file = selected[0].data(0, Qt.ItemDataRole.UserRole)
+        if file.is_main:
+            return
 
         for f in self.current_group.files:
             f.is_main = (f.path == file.path)
@@ -755,13 +786,15 @@ class MainWindow(QMainWindow):
 
         self.on_group_selected()
 
-    def select_all_in_group(self):
+    def toggle_select_all_in_group(self):
         if not self.current_group:
             return
 
+        select_all = self.select_group_btn.isChecked()
+
         for file in self.current_group.files:
-            if file != self.current_group.main_file:
-                file.selected = True
+            if not file.is_main:
+                file.selected = select_all
 
         self.on_group_selected()
 
@@ -778,6 +811,7 @@ class MainWindow(QMainWindow):
 
         if self.current_group:
             self.on_group_selected()
+            self.update_select_group_button_state()
 
         QMessageBox.information(
             self, "Success",
@@ -790,10 +824,12 @@ class MainWindow(QMainWindow):
 
         for group in self.state['groups']:
             for file in group.files:
-                file.selected = False
+                if not file.is_main:
+                    file.selected = False
 
         if self.current_group:
             self.on_group_selected()
+            self.update_select_group_button_state()
 
         QMessageBox.information(self, "Success", "All files deselected")
 
@@ -918,8 +954,6 @@ class MainWindow(QMainWindow):
                 try:
                     os.remove(path)
                     deleted += 1
-                    if deleted % 10 == 0:
-                        self.status_label.setText(f"Cleaned: {deleted} items")
                 except OSError as e:
                     errors.append(f"{name}: {e}")
 
@@ -934,7 +968,6 @@ class MainWindow(QMainWindow):
             result_msg += "\n\nErrors:\n" + "\n".join(errors)
 
         QMessageBox.information(self, "Cleanup Complete", result_msg)
-        self.status_label.setText("Duplicates folder cleaned")
 
     def open_dupes_folder(self):
         folder = self.state['dupes_folder']
@@ -973,6 +1006,8 @@ class MainWindow(QMainWindow):
 
         self.right_title.setText("Group Details")
         self.right_info.setText("")
+        self.select_group_btn.setChecked(False)
+        self.select_group_btn.setEnabled(False)
 
         self.stats_total_label.setText("Files: -")
         self.stats_dupes_label.setText("Duplicates: -")
@@ -981,7 +1016,6 @@ class MainWindow(QMainWindow):
 
         self.progress_bar.setValue(0)
         self.progress_label.setText("")
-        self.status_label.setText("Ready")
 
         self.move_btn.setEnabled(False)
         self.delete_btn.setEnabled(False)
@@ -1007,7 +1041,6 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "Detailed Statistics", stats)
 
     def show_about(self):
-
         QMessageBox.about(self, "About Smart Duplicate Cleaner", self.config.about_text)
 
     def open_documentation(self):
