@@ -1,4 +1,10 @@
-# Smart Duplicate Cleaner v0.3.2
+# Smart Duplicate Cleaner <sup>v0.4.0</sup>
+
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/smartlegionlab/smart-duplicate-cleaner-python)](https://github.com/smartlegionlab/smart-duplicate-cleaner-python/)
+![GitHub top language](https://img.shields.io/github/languages/top/smartlegionlab/smart-duplicate-cleaner-python)
+[![GitHub](https://img.shields.io/github/license/smartlegionlab/smart-duplicate-cleaner-python)](https://github.com/smartlegionlab/smart-duplicate-cleaner-python/blob/master/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/smartlegionlab/smart-duplicate-cleaner-python?style=social)](https://github.com/smartlegionlab/smart-duplicate-cleaner-python/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/smartlegionlab/smart-duplicate-cleaner-python?style=social)](https://github.com/smartlegionlab/smart-duplicate-cleaner-python/network/members)
 
 **Smart Duplicate Cleaner** is an app for finding and managing duplicate files. It's written in Python using PyQt6.
 
@@ -215,3 +221,9 @@ THE USER IS STRONGLY ADVISED TO:
 *Made with ❤️ for the open-source community*
 
 **LAST UPDATED: 2026**
+
+---
+
+## 🖼️ Screenshot
+
+![Smart Duplicate Cleaner](https://github.com/smartlegionlab/smart-duplicate-cleaner/blob/master/data/images/smart-duplicate-cleaner.png)

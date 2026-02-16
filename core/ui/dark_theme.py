@@ -1,3 +1,4 @@
+# Copyright (©) 2026, Alexander Suvorov. All rights reserved.
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QPalette, QColor
 

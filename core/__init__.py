@@ -1,1 +1,3 @@
-__version__ = '0.3.2'
+# Copyright (©) 2026, Alexander Suvorov. All rights reserved.
+"""Smart Duplicate Cleaner is an app for finding and managing duplicate files. It's written in Python using PyQt6."""
+__version__ = '0.4.0'

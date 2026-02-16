@@ -1,3 +1,4 @@
+# Copyright (©) 2026, Alexander Suvorov. All rights reserved.
 import os
 import json
 from pathlib import Path
@@ -8,7 +9,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QLineEdit, QComboBox, QCheckBox,
     QTreeWidget, QTreeWidgetItem, QProgressBar, QMessageBox,
     QFileDialog, QSplitter, QFrame, QHeaderView, QAbstractItemView,
-    QGroupBox, QGridLayout, QScrollArea, QSpinBox
+    QGroupBox, QGridLayout, QScrollArea, QSpinBox, QDialog, QTextEdit, QDialogButtonBox
 )
 from PyQt6.QtCore import Qt, QRegularExpression
 from PyQt6.QtGui import QFont, QAction, QKeySequence, QRegularExpressionValidator
@@ -1233,7 +1234,41 @@ class MainWindow(QMainWindow):
         msg.exec()
 
     def show_about(self):
-        QMessageBox.about(self, "About Smart Duplicate Cleaner", self.config.about_text)
+        dialog = QDialog(self)
+        dialog.setWindowTitle("About Smart Duplicate Cleaner")
+        dialog.setMinimumSize(600, 500)
+
+        layout = QVBoxLayout(dialog)
+
+        title = QLabel("Smart Duplicate Cleaner")
+        title_font = QFont()
+        title_font.setPointSize(16)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title)
+
+        version = QLabel(f"Version {self.config.version}")
+        version.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(version)
+
+        about_label = QLabel()
+        about_label.setText(self.config.about_text)
+        about_label.setTextFormat(Qt.TextFormat.RichText)
+        about_label.setOpenExternalLinks(True)
+        about_label.setWordWrap(True)
+        scroll = QScrollArea()
+        scroll.setWidget(about_label)
+        scroll.setWidgetResizable(True)
+        scroll.setMinimumHeight(350)
+        scroll.setStyleSheet("QScrollArea { border: none; }")
+        layout.addWidget(scroll)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        button_box.accepted.connect(dialog.accept)
+        layout.addWidget(button_box)
+
+        dialog.exec()
 
     def open_documentation(self):
         import webbrowser
@@ -1244,11 +1279,56 @@ class MainWindow(QMainWindow):
         webbrowser.open(self.config.issue_url)
 
     def show_license(self):
-        msg = QMessageBox(self)
-        msg.setWindowTitle("License")
-        msg.setText(self.config.license_text)
-        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
-        msg.exec()
+        dialog = QDialog(self)
+        dialog.setWindowTitle("License")
+        dialog.setMinimumSize(600, 500)
+
+        layout = QVBoxLayout(dialog)
+
+        title = QLabel("BSD 3-Clause License")
+        title_font = QFont()
+        title_font.setPointSize(14)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title)
+
+        text_edit = QTextEdit()
+        text_edit.setReadOnly(True)
+
+        license_text = self.load_license_from_file()
+        if license_text:
+            text_edit.setPlainText(license_text)
+        else:
+            text_edit.setPlainText(self.config.license_text)
+
+        text_edit.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
+        text_edit.setMinimumHeight(350)
+        layout.addWidget(text_edit)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        button_box.accepted.connect(dialog.accept)
+        layout.addWidget(button_box)
+
+        dialog.exec()
+
+    def load_license_from_file(self):
+        try:
+            possible_paths = [
+                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'LICENSE'),
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), 'LICENSE'),
+                os.path.join(os.path.dirname(__file__), 'LICENSE'),
+                os.path.join(os.getcwd(), 'LICENSE')
+            ]
+
+            for path in possible_paths:
+                if os.path.exists(path):
+                    with open(path, 'r', encoding='utf-8') as f:
+                        return f.read()
+
+            return None
+        except Exception:
+            return None
 
     @staticmethod
     def format_size(size):

@@ -1,3 +1,4 @@
+# Copyright (©) 2026, Alexander Suvorov. All rights reserved.
 from core import __version__ as ver
 
 class Config:
@@ -6,62 +7,80 @@ class Config:
     doc_url = "https://github.com/smartlegionlab/smart-duplicate-cleaner-python"
     issue_url = "https://github.com/smartlegionlab/smart-duplicate-cleaner-python/issues"
     about_text = f"""
-            <h2>Smart Duplicate Cleaner v{ver}</h2>
-            <p>A powerful GUI application for finding and managing duplicate files.</p>
-            <p>Built with Python and PyQt6.</p>
-            <p><br></p>
-            <p>Author: Alexander Suvorov</p>
-            <p>GitHub: @smartlegionlab</p>
-            <p><br></p>
-            <p>License: BSD 3-Clause</p>
-            <p>© 2026 Smart Legion Lab</p>
-            """
-    license_text = """
-            <h3>BSD 3-Clause License</h3>
-            <p>Copyright (c) 2026, Alexander Suvorov<br>
-            All rights reserved.</p>
-            <p>Redistribution and use in source and binary forms, with or without<br>
-            modification, are permitted provided that the following conditions are met:</p>
-            <p>1. Redistributions of source code must retain the above copyright notice,<br>
-               this list of conditions and the following disclaimer.</p>
-            <p>2. Redistributions in binary form must reproduce the above copyright notice,<br>
-               this list of conditions and the following disclaimer in the documentation<br>
-               and/or other materials provided with the distribution.</p>
-            <p>3. Neither the name of the copyright holder nor the names of its<br>
-               contributors may be used to endorse or promote products derived from<br>
-               this software without specific prior written permission.</p>
-            <p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"<br>
-            AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE<br>
-            IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE<br>
-            DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE<br>
-            FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL<br>
-            DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR<br>
-            SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER<br>
-            CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,<br>
-            OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE<br>
-            OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</p>
-            """
+    <div style='font-family: sans-serif;'>
+
+        <p>A powerful GUI application for finding and managing duplicate files.<br>
+        Built with Python and PyQt6.</p>
+
+        <p><b>Features:</b></p>
+        <ul>
+            <li>Multi-threaded scanning</li>
+            <li>Fast hashing with xxHash (MD5 fallback)</li>
+            <li>6 selection strategies</li>
+            <li>Move or delete duplicates</li>
+            <li>JSON logs for moved files</li>
+            <li>File restoration from logs</li>
+            <li>Dark theme</li>
+            <li>Keyboard shortcuts</li>
+        </ul>
+
+        <p><b>Author:</b> <a style="color: #467fd4" href='https://github.com/smartlegionlab'>Alexander Suvorov</a><br>
+
+        <p><b>License:</b> BSD 3-Clause<br>
+        Copyright (c) 2026 Smart Legion Lab</p>
+
+        <p><i>This software is provided "AS IS" without any warranties.</i></p>
+    </div>
+    """
+    license_text = """BSD 3-Clause License
+
+        Copyright (c) 2026, Alexander Suvorov
+    
+        Redistribution and use in source and binary forms, with or without
+        modification, are permitted provided that the following conditions are met:
+    
+        1. Redistributions of source code must retain the above copyright notice, this
+           list of conditions and the following disclaimer.
+    
+        2. Redistributions in binary form must reproduce the above copyright notice,
+           this list of conditions and the following disclaimer in the documentation
+           and/or other materials provided with the distribution.
+    
+        3. Neither the name of the copyright holder nor the names of its
+           contributors may be used to endorse or promote products derived from
+           this software without specific prior written permission.
+    
+        THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+        AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+        IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+        DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+        FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+        DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+        SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+        CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+        OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+        OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."""
     shortcuts_text = """
             <h3>Keyboard Shortcuts</h3>
             <table>
             <tr><th>Action</th><th>Shortcut</th></tr>
-            <tr><td>Select Scan Folder</td><td>Ctrl+Shift+O</td></tr>
-            <tr><td>Select Duplicates Folder</td><td>Ctrl+Shift+D</td></tr>
-            <tr><td>Start Scan</td><td>Ctrl+R</td></tr>
-            <tr><td>Cancel Scan</td><td>Ctrl+Shift+C</td></tr>
-            <tr><td>Reset</td><td>Ctrl+Shift+R</td></tr>
-            <tr><td>Exit</td><td>Ctrl+Q</td></tr>
-            <tr><td>Select All Duplicates</td><td>Ctrl+A</td></tr>
-            <tr><td>Deselect All</td><td>Ctrl+Shift+A</td></tr>
-            <tr><td>Test Mode</td><td>Ctrl+T</td></tr>
-            <tr><td>Show Statistics</td><td>Ctrl+I</td></tr>
-            <tr><td>Clear Search</td><td>Ctrl+L</td></tr>
-            <tr><td>Move Selected Files</td><td>Ctrl+M</td></tr>
-            <tr><td>Delete Selected Files</td><td>Ctrl+Shift+Delete</td></tr>
-            <tr><td>Open Dupes Folder</td><td>Ctrl+Shift+F</td></tr>
-            <tr><td>Keyboard Shortcuts</td><td>Ctrl+/</td></tr>
-            <tr><td>About</td><td>Ctrl+H</td></tr>
-            <tr><td>Documentation</td><td>F1</td></tr>
-            <tr><td>Report Issue</td><td>Ctrl+Shift+I</td></tr>
+            <tr><td>Select Scan Folder</td><td style="color: #467fd4">Ctrl+Shift+O</td></tr>
+            <tr><td>Select Duplicates Folder</td><td style="color: #467fd4">Ctrl+Shift+D</td></tr>
+            <tr><td>Start Scan</td><td style="color: #467fd4">Ctrl+R</td></tr>
+            <tr><td>Cancel Scan</td><td style="color: #467fd4">Ctrl+Shift+C</td></tr>
+            <tr><td>Reset</td><td style="color: #467fd4">Ctrl+Shift+R</td></tr>
+            <tr><td>Exit</td><td style="color: #467fd4">Ctrl+Q</td></tr>
+            <tr><td>Select All Duplicates</td><td style="color: #467fd4">Ctrl+A</td></tr>
+            <tr><td>Deselect All</td><td style="color: #467fd4">Ctrl+Shift+A</td></tr>
+            <tr><td>Test Mode</td><td style="color: #467fd4">Ctrl+T</td></tr>
+            <tr><td>Show Statistics</td><td style="color: #467fd4">Ctrl+I</td></tr>
+            <tr><td>Clear Search</td><td style="color: #467fd4">Ctrl+L</td></tr>
+            <tr><td>Move Selected Files</td><td style="color: #467fd4">Ctrl+M</td></tr>
+            <tr><td>Delete Selected Files</td><td style="color: #467fd4">Ctrl+Shift+Delete</td></tr>
+            <tr><td>Open Dupes Folder</td><td style="color: #467fd4">Ctrl+Shift+F</td></tr>
+            <tr><td>Keyboard Shortcuts</td><td style="color: #467fd4">Ctrl+/</td></tr>
+            <tr><td>About</td><td style="color: #467fd4">Ctrl+H</td></tr>
+            <tr><td>Documentation</td><td style="color: #467fd4">F1</td></tr>
+            <tr><td>Report Issue</td><td style="color: #467fd4">Ctrl+Shift+I</td></tr>
             </table>
             """
