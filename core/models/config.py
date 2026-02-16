@@ -41,3 +41,27 @@ class Config:
             OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE<br>
             OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</p>
             """
+    shortcuts_text = """
+            <h3>Keyboard Shortcuts</h3>
+            <table>
+            <tr><th>Action</th><th>Shortcut</th></tr>
+            <tr><td>Select Scan Folder</td><td>Ctrl+Shift+O</td></tr>
+            <tr><td>Select Duplicates Folder</td><td>Ctrl+Shift+D</td></tr>
+            <tr><td>Start Scan</td><td>Ctrl+R</td></tr>
+            <tr><td>Cancel Scan</td><td>Ctrl+Shift+C</td></tr>
+            <tr><td>Reset</td><td>Ctrl+Shift+R</td></tr>
+            <tr><td>Exit</td><td>Ctrl+Q</td></tr>
+            <tr><td>Select All Duplicates</td><td>Ctrl+A</td></tr>
+            <tr><td>Deselect All</td><td>Ctrl+Shift+A</td></tr>
+            <tr><td>Test Mode</td><td>Ctrl+T</td></tr>
+            <tr><td>Show Statistics</td><td>Ctrl+I</td></tr>
+            <tr><td>Clear Search</td><td>Ctrl+L</td></tr>
+            <tr><td>Move Selected Files</td><td>Ctrl+M</td></tr>
+            <tr><td>Delete Selected Files</td><td>Ctrl+Shift+Delete</td></tr>
+            <tr><td>Open Dupes Folder</td><td>Ctrl+Shift+F</td></tr>
+            <tr><td>Keyboard Shortcuts</td><td>Ctrl+/</td></tr>
+            <tr><td>About</td><td>Ctrl+H</td></tr>
+            <tr><td>Documentation</td><td>F1</td></tr>
+            <tr><td>Report Issue</td><td>Ctrl+Shift+I</td></tr>
+            </table>
+            """

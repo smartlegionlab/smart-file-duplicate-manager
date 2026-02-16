@@ -1,79 +1,217 @@
-# Smart Duplicate Cleaner v0.3.0
+# Smart Duplicate Cleaner v0.3.2
 
-**Smart Duplicate Cleaner** is a powerful GUI application for finding and managing duplicate files. Built with Python and PyQt6.
+**Smart Duplicate Cleaner** is an app for finding and managing duplicate files. It's written in Python using PyQt6.
 
-## 🚀 Installation
+## Features
 
-### Prerequisites
-- Python 3.8 or higher
-- pip (Python package installer)
+### Duplicate Search
+- Scan the selected folder and all subfolders
+- Compare files by size, then by hash (xxHash, or MD5 if none)
+- Multi-threaded scanning (uses all available processor cores)
+- Filters by file size and extension
+- Exclude folders containing duplicates from scanning
 
-### Quick Start
+### Duplicate Management
+- Automatically determines the primary file in each group based on the following strategy:
+- Oldest / Newest
+- Smallest / Largest
+- Shortest / Longest Path
+- All other files in the group are automatically marked as duplicates
+- Manually select files in each group (checkboxes)
+- Ability to change the primary file in a group
+- Globally select all duplicates / deselect all
+
+### File Actions
+- **Move** — duplicates are moved to the destination folder in a subfolder with the date and time. A JSON log with all information about the moved files is saved in the folder.
+- **Delete** — permanently deletes selected files (with confirmation)
+- **Test Mode** — simulates actions without actually moving/deleting
+
+### Restore
+- View all previously moved files from JSON logs
+- Selective file restore to their original folders
+- A backup is created during restore if the file already exists in the original folder
+- Automatic log update and deletion of empty folders
+
+### Interface
+- Three main panels:
+- Left — scan settings
+- Center — list of duplicate groups with statistics
+- Right — group details and file list with checkboxes
+- Search by file name
+- Progress bar and status bar
+- Confirmation of all important actions
+- Hotkeys for basic operations
+- Dark theme
+
+## Installation and Run
 
 ```bash
-# Clone repository
+# Cloning the repository
 git clone https://github.com/smartlegionlab/smart-duplicate-cleaner-python.git
 cd smart-duplicate-cleaner-python
 
-# Install dependencies
+python -m venv venv
+source venv/bin/activate
+
+# Installing dependencies
 pip install -r requirements.txt
 
-# Run the application
-python main.py
+# Running
+python app.py
 ```
 
-## ✨ Features
+## System Requirements
+- Python 3.8 or higher
+- Windows / Linux / macOS
 
-### Core Functionality
-- **Multi-threaded scanning** - Uses all CPU cores for maximum performance
-- **Fast hashing** - Uses xxHash (5-10x faster than MD5) with MD5 fallback
-- **Real-time progress** - Live updates with file count and current operation
-- **Smart filtering** - Filter by size, extensions, and exclude specific folders
+## Dependencies
+- PyQt6 — GUI
+- xxhash — fast hashing (optional)
 
-### Duplicate Management
-- **7 selection strategies** for automatic main file selection:
-  - Oldest / Newest files (by modification time)
-  - Smallest / Largest size
-  - Shortest / Longest path
-  - Priority folder preference
-- **Global selection** - Select all duplicates across all groups with one click
-- **Batch processing** - Process all selected duplicates in a single operation
-- **Dual action modes**:
-  - **Move** - Safely relocate duplicates to organized folder structure
-  - **Delete** - Permanently remove selected duplicates (with confirmation)
-- **Organized storage** - Moved files are stored in dated subfolders
-- **Folder maintenance** - Clean up duplicates folder with one click
-- **Interactive UI** - Manually check/uncheck files in any group
-- **Main file override** - Change which file to keep in each group
-- **Test mode** - Preview actions without actually moving/deleting files
+## Usage
 
-### Modern Interface
-- **Three-panel layout**:
-  - **Left panel**: Settings panel with all configuration options
-  - **Center panel**: Searchable list of duplicate groups
-  - **Right panel**: Detailed file view with checkboxes
-- **Live search** - Filter groups by filename in real-time
-- **Progress tracking** - Visual progress bar with detailed status
-- **File information** - View full path, size, modification date, and hash
-- **Classic menu bar** with keyboard shortcuts
-- **Button bar** - Logically grouped buttons at the bottom
-- **Dark theme** - Modern Bootstrap-like dark theme with color-coded buttons
+1. In the left panel, specify the scan folder and the duplicates folder.
+2. If necessary, adjust filters and select a strategy.
+3. Click "Start Scan."
+4. After scanning is complete, select the desired files (or use "Select All").
+5. Select the action: "Move Selected" or "Delete Selected."
+6. To restore previously moved files, use the "Tools" → "Restore Files" menu.
 
-## 📝 Usage Example
+## Hotkeys
 
-```bash
-# Run the application
-python main.py
+| Action | Keys              |
+|----------|-------------------|
+| Select folder to scan | Ctrl+Shift+O      |
+| Select folder for duplicates | Ctrl+Shift+D      |
+| Start scan | Ctrl+R            |
+| Cancel scan | Ctrl+Shift+C      |
+| Reset | Ctrl+Shift+R      |
+| Exit | Ctrl+Q            |
+| Select all duplicates | Ctrl+A            |
+| Deselect all | Ctrl+Shift+A      |
+| Test mode | Ctrl+T            |
+| Show statistics | Ctrl+I            |
+| Clear search | Ctrl+L            |
+| Move selected | Ctrl+M            |
+| Delete selected | Ctrl+Shift+Delete |
+| Open duplicates folder | Ctrl+Shift+F      |
+| Hotkeys | Ctrl+/            |
+| About | Ctrl+H            |
+| Documentation | F1                |
+| Report a problem | Ctrl+Shift+I      |
 
-# Basic workflow:
-# 1. Select folder to scan
-# 2. Choose duplicates folder
-# 3. Set strategy (e.g., "oldest")
-# 4. Click "Start Scan"
-# 5. Click "Select All Dupes"
-# 6. Click "Move Selected" or "Delete Selected"
-```
+---
 
-## 📄 License
+## 👤 Author
 
-[BSD 3-Clause License](LICENSE)
+**Alexander Suvorov**
+- GitHub: [@smartlegionlab](https://github.com/smartlegionlab)
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/smartlegionlab/smart-duplicate-cleaner-python/issues).
+
+## ⭐ Support
+
+If you find this tool useful, please consider giving it a star on GitHub!
+
+---
+
+## License
+
+BSD 3-Clause License. See the [LICENSE](LICENSE) file for more details.
+
+---
+
+## ⚠️ DISCLAIMER
+
+### COMPLETE AND UNCONDITIONAL WAIVER OF LIABILITY
+
+**BY USING, DOWNLOADING, INSTALLING, COMPILING, OR OTHERWISE INTERACTING WITH THIS SOFTWARE (THE "SOFTWARE"), YOU (THE "USER") EXPRESSLY AND IRREVOCABLY AGREE TO THE FOLLOWING TERMS:**
+
+#### 1. ABSOLUTE WAIVER OF LIABILITY
+
+THE AUTHOR, COPYRIGHT HOLDER, AND CONTRIBUTORS (COLLECTIVELY, THE "AUTHOR") SHALL NOT BE HELD LIABLE UNDER ANY CIRCUMSTANCES, WHETHER IN CONTRACT, TORT (INCLUDING NEGLIGENCE), STRICT LIABILITY, OR ANY OTHER LEGAL OR EQUITABLE THEORY, FOR ANY:
+
+- DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR EXEMPLARY DAMAGES
+- LOSS OF PROFITS, REVENUE, OR DATA
+- LOSS OF BUSINESS OPPORTUNITY OR GOODWILL
+- SYSTEM FAILURE OR MALFUNCTION
+- CORRUPTION OR LOSS OF FILES OR DATA
+- UNAUTHORIZED ACCESS TO OR DELETION OF FILES
+- HARDWARE DAMAGE OR FAILURE
+- ANY OTHER DAMAGES OR LOSSES WHATSOEVER
+
+**THIS WAIVER APPLIES EVEN IF THE AUTHOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.**
+
+#### 2. UNCONDITIONAL ACCEPTANCE OF RISK
+
+THE USER ACKNOWLEDGES AND ACCEPTS THAT:
+
+- THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT ANY WARRANTIES WHATSOEVER
+- THE USER ASSUMES ALL RISKS ASSOCIATED WITH THE USE OF THIS SOFTWARE
+- THE USER IS SOLELY RESPONSIBLE FOR BACKING UP ALL DATA BEFORE USING THE SOFTWARE
+- THE USER IS SOLELY RESPONSIBLE FOR VERIFYING ALL ACTIONS PERFORMED BY THE SOFTWARE
+- THE USER BEARS FULL RESPONSIBILITY FOR ANY CONSEQUENCES ARISING FROM THE USE OF THIS SOFTWARE
+
+#### 3. NO WARRANTIES
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE AUTHOR EXPRESSLY DISCLAIMS ALL WARRANTIES, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE, INCLUDING BUT NOT LIMITED TO:
+
+- WARRANTIES OF MERCHANTABILITY
+- WARRANTIES OF FITNESS FOR A PARTICULAR PURPOSE
+- WARRANTIES OF TITLE OR NON-INFRINGEMENT
+- WARRANTIES OF ACCURACY, RELIABILITY, OR COMPLETENESS
+- WARRANTIES OF UNINTERRUPTED OR ERROR-FREE OPERATION
+
+---
+
+## 🚧 DEVELOPMENT STATUS
+
+### ALPHA SOFTWARE NOTICE
+
+**THIS SOFTWARE IS IN ACTIVE DEVELOPMENT AND IS PROVIDED "AS IS" WITHOUT ANY WARRANTIES WHATSOEVER.**
+
+#### 1. DEVELOPMENT STAGE
+
+THE USER ACKNOWLEDGES AND ACCEPTS THAT:
+
+- THIS SOFTWARE IS CURRENTLY IN **ALPHA DEVELOPMENT STAGE**
+- THE SOFTWARE IS NOT YET FEATURE-COMPLETE OR STABLE
+- THE SOFTWARE IS SUBJECT TO SIGNIFICANT CHANGES WITHOUT NOTICE
+- THE SOFTWARE MAY CONTAIN BUGS, ERRORS, OR DEFICIENCIES
+- THE SOFTWARE MAY NOT FUNCTION AS INTENDED OR DOCUMENTED
+- THE SOFTWARE MAY NOT BE SUITABLE FOR PRODUCTION USE
+
+#### 2. UNPREDICTABLE BEHAVIOR
+
+THE USER UNDERSTANDS THAT THE SOFTWARE MAY EXHIBIT UNPREDICTABLE BEHAVIOR INCLUDING BUT NOT LIMITED TO:
+
+- CRASHES OR FREEZES DURING OPERATION
+- INCORRECT IDENTIFICATION OF DUPLICATE FILES
+- FAILURE TO DETECT ACTUAL DUPLICATES
+- ACCIDENTAL SELECTION OF INCORRECT FILES
+- UNINTENDED MOVEMENT OR DELETION OF FILES
+- DATA CORRUPTION OR LOSS
+- PERFORMANCE DEGRADATION OR HANGS
+- INCOMPATIBILITY WITH CERTAIN SYSTEMS OR CONFIGURATIONS
+- INCORRECT FILE HASH COMPUTATION
+- FAILURE TO PROPERLY HANDLE LARGE NUMBERS OF FILES
+
+#### 3. RECOMMENDATIONS
+
+THE USER IS STRONGLY ADVISED TO:
+
+- USE THE SOFTWARE ONLY FOR TESTING AND EVALUATION PURPOSES
+- NEVER USE THE SOFTWARE WITH CRITICAL OR IRREPLACEABLE DATA
+- ALWAYS MAINTAIN COMPLETE AND VERIFIED BACKUPS
+- TEST THE SOFTWARE THOROUGHLY IN A SAFE ENVIRONMENT FIRST
+- VERIFY ALL ACTIONS AND SELECTIONS BEFORE EXECUTING THEM
+- REPORT ANY ISSUES OR UNEXPECTED BEHAVIOR TO THE AUTHOR
+- READ THE DOCUMENTATION CAREFULLY BEFORE USE
+
+---
+
+*Made with ❤️ for the open-source community*
+
+**LAST UPDATED: 2026**
