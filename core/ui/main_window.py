@@ -263,7 +263,7 @@ class MainWindow(QMainWindow):
         filters_layout.addWidget(QLabel("Threads:"), 4, 0)
         self.threads_spin = QSpinBox()
         self.threads_spin.setMinimum(1)
-        self.threads_spin.setMaximum(os.cpu_count() * 2 or 8)
+        self.threads_spin.setMaximum(os.cpu_count() * 4 or 16)
         self.threads_spin.setValue(self.state['threads'])
         self.threads_spin.valueChanged.connect(lambda v: self.state.update({'threads': v}))
         filters_layout.addWidget(self.threads_spin, 4, 1)
