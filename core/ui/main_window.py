@@ -1,6 +1,8 @@
 # Copyright (©) 2026, Alexander Suvorov. All rights reserved.
 import os
 import json
+import subprocess
+import sys
 from pathlib import Path
 from datetime import datetime
 
@@ -9,9 +11,10 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QLineEdit, QComboBox, QCheckBox,
     QTreeWidget, QTreeWidgetItem, QProgressBar, QMessageBox,
     QFileDialog, QSplitter, QFrame, QHeaderView, QAbstractItemView,
-    QGroupBox, QGridLayout, QScrollArea, QSpinBox, QDialog, QTextEdit, QDialogButtonBox
+    QGroupBox, QGridLayout, QScrollArea, QSpinBox, QDialog,
+    QTextEdit, QDialogButtonBox, QMenu
 )
-from PyQt6.QtCore import Qt, QRegularExpression
+from PyQt6.QtCore import Qt, QRegularExpression, QPoint
 from PyQt6.QtGui import QFont, QAction, QKeySequence, QRegularExpressionValidator
 
 from core.models.config import Config
@@ -383,6 +386,8 @@ class MainWindow(QMainWindow):
         self.files_tree.header().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.files_tree.setAlternatingRowColors(True)
         self.files_tree.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.files_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.files_tree.customContextMenuRequested.connect(self.show_file_context_menu)
         self.files_tree.itemChanged.connect(self.on_file_check_changed)
 
         layout.addWidget(self.files_tree)
@@ -810,6 +815,71 @@ class MainWindow(QMainWindow):
         if file and not file.is_main:
             file.selected = (item.checkState(0) == Qt.CheckState.Checked)
 
+    def show_file_context_menu(self, position: QPoint):
+        item = self.files_tree.itemAt(position)
+        if not item:
+            return
+
+        file = item.data(0, Qt.ItemDataRole.UserRole)
+        if not file:
+            return
+
+        menu = QMenu()
+
+        open_folder_action = menu.addAction("Open Containing Folder")
+        open_folder_action.triggered.connect(lambda: self.open_file_folder(file))
+
+        menu.addSeparator()
+
+        if not file.is_main:
+            set_main_action = menu.addAction("Set as Main File")
+            set_main_action.triggered.connect(lambda: self.set_file_as_main(file))
+
+        if file.selected:
+            deselect_action = menu.addAction("Deselect")
+            deselect_action.triggered.connect(lambda: self.toggle_file_selection(file, False))
+        else:
+            select_action = menu.addAction("Select")
+            select_action.triggered.connect(lambda: self.toggle_file_selection(file, True))
+
+        menu.addSeparator()
+
+        select_all_in_group = menu.addAction("Select All in Group")
+        select_all_in_group.triggered.connect(self.select_all_in_group)
+
+        deselect_all_in_group = menu.addAction("Deselect All in Group")
+        deselect_all_in_group.triggered.connect(self.deselect_all_in_group)
+
+        menu.exec(self.files_tree.viewport().mapToGlobal(position))
+
+    def open_file_folder(self, file):
+        folder = os.path.dirname(file.path)
+        if os.path.exists(folder):
+            if sys.platform == 'win32':
+                os.startfile(folder)
+            elif sys.platform == 'darwin':
+                subprocess.run(['open', folder])
+            else:
+                subprocess.run(['xdg-open', folder])
+
+    def set_file_as_main(self, file):
+        if not self.current_group or file not in self.current_group.files:
+            return
+
+        for f in self.current_group.files:
+            f.is_main = (f.path == file.path)
+        self.current_group.main_file = file
+
+        self.on_group_selected()
+        self.status_label.setText(f"Main file changed to: {file.name}")
+
+    def toggle_file_selection(self, file, selected):
+        if file.is_main:
+            return
+
+        file.selected = selected
+        self.on_group_selected()
+
     def select_main_file(self, files):
         strategy = self.state['strategy']
         if strategy == "newest":
@@ -837,24 +907,7 @@ class MainWindow(QMainWindow):
             return
 
         file = selected[0].data(0, Qt.ItemDataRole.UserRole)
-        if file.is_main:
-            QMessageBox.information(self, "Info", "This file is already the main file")
-            return
-
-        reply = QMessageBox.question(
-            self, "Confirm Change",
-            f"Set '{file.name}' as the main file?\n\nThis file will be kept, others will remain as duplicates.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        if reply != QMessageBox.StandardButton.Yes:
-            return
-
-        for f in self.current_group.files:
-            f.is_main = (f.path == file.path)
-        self.current_group.main_file = file
-
-        self.on_group_selected()
-        self.status_label.setText(f"Main file changed to: {file.name}")
+        self.set_file_as_main(file)
 
     def select_all_in_group(self):
         if not self.current_group:
@@ -1078,9 +1131,6 @@ class MainWindow(QMainWindow):
                 "Duplicates folder does not exist yet. Please run a scan first."
             )
             return
-
-        import subprocess
-        import sys
 
         if sys.platform == 'win32':
             os.startfile(folder)
