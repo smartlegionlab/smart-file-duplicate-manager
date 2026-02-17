@@ -1172,12 +1172,12 @@ class MainWindow(QMainWindow):
 
     def show_about(self):
         dialog = QDialog(self)
-        dialog.setWindowTitle("About Smart Duplicate Cleaner")
+        dialog.setWindowTitle("About Smart File Duplicate Manager")
         dialog.setMinimumSize(600, 500)
 
         layout = QVBoxLayout(dialog)
 
-        title = QLabel("Smart Duplicate Cleaner")
+        title = QLabel("Smart File Duplicate Manager")
         title_font = QFont()
         title_font.setPointSize(16)
         title_font.setBold(True)

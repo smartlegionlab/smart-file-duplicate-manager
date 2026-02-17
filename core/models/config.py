@@ -2,10 +2,10 @@
 from core import __version__ as ver
 
 class Config:
-    app_name = "Smart Duplicate Cleaner"
+    app_name = "Smart File Duplicate Manager"
     version = ver
-    doc_url = "https://github.com/smartlegionlab/smart-duplicate-cleaner-python"
-    issue_url = "https://github.com/smartlegionlab/smart-duplicate-cleaner-python/issues"
+    doc_url = "https://github.com/smartlegionlab/smart-file-duplicate-manager"
+    issue_url = "https://github.com/smartlegionlab/smart-file-duplicate-manager/issues"
     about_text = f"""
     <div style='font-family: sans-serif;'>
 

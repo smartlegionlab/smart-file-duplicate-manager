@@ -1,12 +1,12 @@
-# Smart Duplicate Cleaner <sup>v1.0.4</sup>
+# Smart File Duplicate Manager <sup>v1.0.4</sup>
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/smartlegionlab/smart-duplicate-cleaner-python)](https://github.com/smartlegionlab/smart-duplicate-cleaner-python/)
-![GitHub top language](https://img.shields.io/github/languages/top/smartlegionlab/smart-duplicate-cleaner-python)
-[![GitHub](https://img.shields.io/github/license/smartlegionlab/smart-duplicate-cleaner-python)](https://github.com/smartlegionlab/smart-duplicate-cleaner-python/blob/master/LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/smartlegionlab/smart-duplicate-cleaner-python?style=social)](https://github.com/smartlegionlab/smart-duplicate-cleaner-python/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/smartlegionlab/smart-duplicate-cleaner-python?style=social)](https://github.com/smartlegionlab/smart-duplicate-cleaner-python/network/members)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/smartlegionlab/smart-file-duplicate-manager)](https://github.com/smartlegionlab/smart-file-duplicate-manager/)
+![GitHub top language](https://img.shields.io/github/languages/top/smartlegionlab/smart-file-duplicate-manager)
+[![GitHub](https://img.shields.io/github/license/smartlegionlab/smart-file-duplicate-manager)](https://github.com/smartlegionlab/smart-file-duplicate-manager/blob/master/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/smartlegionlab/smart-file-duplicate-manager?style=social)](https://github.com/smartlegionlab/smart-file-duplicate-manager/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/smartlegionlab/smart-file-duplicate-manager?style=social)](https://github.com/smartlegionlab/smart-file-duplicate-manager/network/members)
 
-**Smart Duplicate Cleaner** is an app for finding and managing duplicate files. It's written in Python using PyQt6.
+**Smart File Duplicate Manager** is an app for finding and managing duplicate files. It's written in Python using PyQt6.
 
 ## Features
 
@@ -50,8 +50,8 @@
 
 ```bash
 # Cloning the repository
-git clone https://github.com/smartlegionlab/smart-duplicate-cleaner-python.git
-cd smart-duplicate-cleaner-python
+git clone https://github.com/smartlegionlab/smart-file-duplicate-manager.git
+cd smart-file-duplicate-manager
 
 python -m venv venv
 source venv/bin/activate
@@ -216,4 +216,4 @@ THE USER IS STRONGLY ADVISED TO:
 
 ## 🖼️ Screenshot
 
-![Smart Duplicate Cleaner](https://github.com/smartlegionlab/smart-duplicate-cleaner-python/blob/master/data/images/smart-duplicate-cleaner.png)
+![Smart File Duplicate Manager](https://github.com/smartlegionlab/smart-file-duplicate-manager/blob/master/data/images/smart-duplicate-cleaner.png)

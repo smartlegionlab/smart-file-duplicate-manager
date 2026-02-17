@@ -8,7 +8,7 @@ from core.ui.main_window import MainWindow
 
 def main():
     app = QApplication(sys.argv)
-    app.setApplicationName("Smart Duplicate Cleaner")
+    app.setApplicationName("Smart File Duplicate Manager")
     app.setOrganizationName("Smart Legion Lab")
 
     ModernStyle.apply(app)
