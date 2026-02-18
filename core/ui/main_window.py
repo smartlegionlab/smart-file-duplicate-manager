@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
     QTreeWidget, QTreeWidgetItem, QProgressBar, QMessageBox,
     QFileDialog, QSplitter, QFrame, QHeaderView, QAbstractItemView,
     QGroupBox, QGridLayout, QScrollArea, QSpinBox, QDialog,
-    QTextEdit, QDialogButtonBox, QMenu
+    QTextEdit, QDialogButtonBox, QMenu, QApplication
 )
 from PyQt6.QtCore import Qt, QRegularExpression, QPoint
 from PyQt6.QtGui import QFont, QAction, QKeySequence, QRegularExpressionValidator
@@ -379,6 +379,7 @@ class MainWindow(QMainWindow):
         self.files_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.files_tree.customContextMenuRequested.connect(self.show_file_context_menu)
         self.files_tree.itemChanged.connect(self.on_file_check_changed)
+        self.files_tree.itemDoubleClicked.connect(self.on_file_double_clicked)
 
         layout.addWidget(self.files_tree)
 
@@ -803,6 +804,16 @@ class MainWindow(QMainWindow):
             return
 
         menu = QMenu()
+
+        details_action = menu.addAction("File Details")
+        details_action.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_FileDialogDetailedView))
+        details_action.triggered.connect(lambda: self.show_file_details(file))
+
+        copy_path_action = menu.addAction("Copy Full Path")
+        copy_path_action.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_FileLinkIcon))
+        copy_path_action.triggered.connect(lambda: self.copy_to_clipboard(file.path))
+
+        menu.addSeparator()
 
         open_folder_action = menu.addAction("Open Containing Folder")
         open_folder_action.triggered.connect(lambda: self.open_file_folder(file))
@@ -1274,3 +1285,47 @@ class MainWindow(QMainWindow):
                 return f"{size:.1f} {unit}"
             size /= 1024.0
         return f"{size:.1f} PB"
+
+    def show_file_details(self, file):
+        if not file:
+            return
+
+        details = f"""
+        <b>File Details:</b><br><br>
+
+        <b>Name:</b> {file.name}<br>
+        <b>Full Path:</b><br>
+        <span style='font-family: monospace; word-wrap: break-word;'>{file.path}</span><br><br>
+
+        <b>Size:</b> {file.size_str} ({file.size:,} bytes)<br>
+        <b>Hash:</b> {file.hash if file.hash else 'Not calculated'}<br>
+        <b>Modified:</b> {file.date_str}<br>
+
+        <b>Group Hash:</b> {file.hash[:16] if file.hash else 'N/A'}<br>
+        <b>Is Main File:</b> {'Yes' if file.is_main else 'No'}<br>
+        <b>Selected:</b> {'Yes' if file.selected else 'No'}<br>
+        """
+
+        if hasattr(file, 'mod_time') and file.mod_time:
+            details += f"<b>Timestamp:</b> {file.mod_time}<br>"
+
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("File Details")
+        msg_box.setText(details)
+        msg_box.setTextFormat(Qt.TextFormat.RichText)
+
+        copy_btn = msg_box.addButton("Copy Path", QMessageBox.ButtonRole.ActionRole)
+        copy_btn.clicked.connect(lambda: self.copy_to_clipboard(file.path))
+
+        msg_box.addButton(QMessageBox.StandardButton.Ok)
+        msg_box.exec()
+
+    def copy_to_clipboard(self, text):
+        clipboard = QApplication.clipboard()
+        clipboard.setText(text)
+        self.status_label.setText("Path copied to clipboard")
+
+    def on_file_double_clicked(self, item, column):
+        file = item.data(0, Qt.ItemDataRole.UserRole)
+        if file:
+            self.show_file_details(file)
