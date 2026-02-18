@@ -6,7 +6,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/smartlegionlab/smart-file-duplicate-manager?style=social)](https://github.com/smartlegionlab/smart-file-duplicate-manager/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/smartlegionlab/smart-file-duplicate-manager?style=social)](https://github.com/smartlegionlab/smart-file-duplicate-manager/network/members)
 
-**Smart File Duplicate Manager** is an app for finding and managing duplicate files. It's written in Python using PyQt6.
+**Smart File Duplicate Manager** is an app for finding and managing duplicate files. It's written on Python using PyQt6.
 
 ## Features
 
