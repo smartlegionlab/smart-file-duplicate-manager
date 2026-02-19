@@ -76,10 +76,12 @@ class Config:
             <tr><td>Show Statistics</td><td style="color: #467fd4">Ctrl+I</td></tr>
             <tr><td>Clear Search</td><td style="color: #467fd4">Ctrl+L</td></tr>
             <tr><td>Move Selected Files</td><td style="color: #467fd4">Ctrl+M</td></tr>
+            <tr><td>Restore Files</td><td style="color: #467fd4">Ctrl+Shift+R</td></tr>
             <tr><td>Open Dupes Folder</td><td style="color: #467fd4">Ctrl+Shift+F</td></tr>
             <tr><td>Keyboard Shortcuts</td><td style="color: #467fd4">Ctrl+/</td></tr>
             <tr><td>About</td><td style="color: #467fd4">Ctrl+H</td></tr>
             <tr><td>Documentation</td><td style="color: #467fd4">F1</td></tr>
             <tr><td>Report Issue</td><td style="color: #467fd4">Ctrl+Shift+I</td></tr>
+            <tr><td>License</td><td style="color: #467fd4">Ctrl+Alt+L</td></tr>
             </table>
             """

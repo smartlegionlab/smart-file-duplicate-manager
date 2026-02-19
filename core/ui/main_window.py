@@ -520,6 +520,7 @@ class MainWindow(QMainWindow):
         help_menu.addAction(report_action)
 
         license_action = QAction("&License", self)
+        license_action.setShortcut(QKeySequence("Ctrl+ALt+L"))
         license_action.triggered.connect(self.show_license)
         help_menu.addAction(license_action)
 

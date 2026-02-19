@@ -1,10 +1,11 @@
-# Smart File Duplicate Manager <sup>v1.1.1</sup>
+# Smart File Duplicate Manager <sup>v1.1.2</sup>
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/smartlegionlab/smart-file-duplicate-manager)](https://github.com/smartlegionlab/smart-file-duplicate-manager/)
 ![GitHub top language](https://img.shields.io/github/languages/top/smartlegionlab/smart-file-duplicate-manager)
 [![GitHub](https://img.shields.io/github/license/smartlegionlab/smart-file-duplicate-manager)](https://github.com/smartlegionlab/smart-file-duplicate-manager/blob/master/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/smartlegionlab/smart-file-duplicate-manager?style=social)](https://github.com/smartlegionlab/smart-file-duplicate-manager/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/smartlegionlab/smart-file-duplicate-manager?style=social)](https://github.com/smartlegionlab/smart-file-duplicate-manager/network/members)
+![Platform](https://img.shields.io/badge/platform-windows%20%7C%20linux%20%7C%20macos-lightgrey)
 
 **Smart File Duplicate Manager** is an app for finding and managing duplicate files. It's written on Python using PyQt6.
 
@@ -81,26 +82,27 @@ python app.py
 
 ## Hotkeys
 
-| Action                       | Keys         |
-|------------------------------|--------------|
-| Select folder to scan        | Ctrl+Shift+O |
-| Select folder for duplicates | Ctrl+Shift+D |
-| Start scan                   | Ctrl+R       |
-| Cancel scan                  | Ctrl+Shift+C |
-| Reset                        | Ctrl+X       |
-| Restore files                | Ctrl+Shift+R |
-| Exit                         | Ctrl+Q       |
-| Select all duplicates        | Ctrl+A       |
-| Deselect all                 | Ctrl+Shift+A |
-| Test mode                    | Ctrl+T       |
-| Show statistics              | Ctrl+I       |
-| Clear search                 | Ctrl+L       |
-| Move selected                | Ctrl+M       |
-| Open duplicates folder       | Ctrl+Shift+F |
-| Hotkeys                      | Ctrl+/       |
-| About                        | Ctrl+H       |
-| Documentation                | F1           |
-| Report a problem             | Ctrl+Shift+I |
+| Action                   | Keys         |
+|--------------------------|--------------|
+| Select Scan Folder       | Ctrl+Shift+O |
+| Select Duplicates Folder | Ctrl+Shift+D |
+| Start scan               | Ctrl+R       |
+| Cancel scan              | Ctrl+Shift+C |
+| Reset                    | Ctrl+X       |
+| Exit                     | Ctrl+Q       |
+| Select all duplicates    | Ctrl+A       |
+| Deselect all             | Ctrl+Shift+A |
+| Test mode                | Ctrl+T       |
+| Show statistics          | Ctrl+I       |
+| Clear search             | Ctrl+L       |
+| Move selected files      | Ctrl+M       |
+| Restore files            | Ctrl+Shift+R |
+| Open duplicates folder   | Ctrl+Shift+F |
+| Keyboard Shortcuts       | Ctrl+/       |
+| About                    | Ctrl+H       |
+| Documentation            | F1           |
+| Report Issue             | Ctrl+Shift+I |
+| License                  | Ctrl+Alt+L   |
 
 ---
 
