@@ -81,7 +81,7 @@ class MainWindow(QMainWindow):
 
     def setup_ui(self):
         self.setWindowTitle(f"{self.config.app_name} v{self.config.version}")
-        self.setMinimumSize(1200, 700)
+        self.setMinimumSize(1280, 720)
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -100,7 +100,7 @@ class MainWindow(QMainWindow):
         left_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_panel = self.create_left_panel()
         left_scroll.setWidget(left_panel)
-        left_scroll.setMaximumWidth(450)
+        left_scroll.setMinimumWidth(400)
 
         center_right_splitter = QSplitter(Qt.Orientation.Horizontal)
         center_right_splitter.setHandleWidth(5)
@@ -129,7 +129,7 @@ class MainWindow(QMainWindow):
         main_splitter.setStyleSheet("QSplitter::handle { background-color: #404040; }")
         main_splitter.addWidget(left_scroll)
         main_splitter.addWidget(center_right_splitter)
-        main_splitter.setSizes([300, 900])
+        main_splitter.setSizes([280, 900])
 
         content_layout.addWidget(main_splitter)
 
