@@ -1190,6 +1190,11 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(dialog)
 
         title = QLabel("Smart File Duplicate Manager")
+        title.setStyleSheet("""
+            QLabel {
+                color: #2a82da;
+            }
+        """)
         title_font = QFont()
         title_font.setPointSize(16)
         title_font.setBold(True)
@@ -1235,6 +1240,11 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(dialog)
 
         title = QLabel("BSD 3-Clause License")
+        title.setStyleSheet("""
+                    QLabel {
+                        color: #2a82da;
+                    }
+                """)
         title_font = QFont()
         title_font.setPointSize(14)
         title_font.setBold(True)
@@ -1292,23 +1302,20 @@ class MainWindow(QMainWindow):
             return
 
         details = f"""
-        <b>File Details:</b><br><br>
+        <b style="color: #2a82da;">File Details:</b><br><br>
 
-        <b>Name:</b> {file.name}<br>
-        <b>Full Path:</b><br>
+        <b style="color: #2a82da;">Name:</b> {file.name}<br>
+        <b style="color: #2a82da;">Full Path:</b><br>
         <span style='font-family: monospace; word-wrap: break-word;'>{file.path}</span><br><br>
 
-        <b>Size:</b> {file.size_str} ({file.size:,} bytes)<br>
-        <b>Hash:</b> {file.hash if file.hash else 'Not calculated'}<br>
-        <b>Modified:</b> {file.date_str}<br>
+        <b style="color: #2a82da;">Size:</b> {file.size_str} ({file.size:,} bytes)<br>
+        <b style="color: #2a82da;">Hash:</b> {file.hash if file.hash else 'Not calculated'}<br>
+        <b style="color: #2a82da;">Modified:</b> {file.date_str}<br>
 
-        <b>Group Hash:</b> {file.hash[:16] if file.hash else 'N/A'}<br>
-        <b>Is Main File:</b> {'Yes' if file.is_main else 'No'}<br>
-        <b>Selected:</b> {'Yes' if file.selected else 'No'}<br>
+        <b style="color: #2a82da;">Group Hash:</b> {file.hash[:16] if file.hash else 'N/A'}<br>
+        <b style="color: #2a82da;">Is Main File:</b> {'Yes' if file.is_main else 'No'}<br>
+        <b style="color: #2a82da;">Selected:</b> {'Yes' if file.selected else 'No'}<br>
         """
-
-        if hasattr(file, 'mod_time') and file.mod_time:
-            details += f"<b>Timestamp:</b> {file.mod_time}<br>"
 
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle("File Details")

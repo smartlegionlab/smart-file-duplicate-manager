@@ -12,7 +12,7 @@ class Config:
         <p>A powerful GUI application for finding and managing duplicate files.<br>
         Built with Python and PyQt6.</p>
 
-        <p><b>Features:</b></p>
+        <p><b style="color: #2a82da;">Features:</b></p>
         <ul>
             <li>Multi-threaded scanning</li>
             <li>Fast hashing with xxHash (MD5 fallback)</li>
@@ -24,9 +24,9 @@ class Config:
             <li>Keyboard shortcuts</li>
         </ul>
 
-        <p><b>Author:</b> <a style="color: #467fd4" href='https://github.com/smartlegionlab'>Alexander Suvorov</a><br>
+        <p><b style="color: #2a82da;">Author:</b> <a style="color: #467fd4" href='https://github.com/smartlegionlab'>Alexander Suvorov</a><br>
 
-        <p><b>License:</b> BSD 3-Clause<br>
+        <p><b style="color: #2a82da;">License:</b> BSD 3-Clause<br>
         Copyright (c) 2026 Smart Legion Lab</p>
 
         <p><i>This software is provided "AS IS" without any warranties.</i></p>
@@ -61,7 +61,8 @@ class Config:
         OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
         OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."""
     shortcuts_text = """
-            <h3>Keyboard Shortcuts</h3>
+            <h3 style="color: #2a82da;">Keyboard Shortcuts</h3>
+            <hr>
             <table>
             <tr><th>Action</th><th>Shortcut</th></tr>
             <tr><td>Select Scan Folder</td><td style="color: #467fd4">Ctrl+Shift+O</td></tr>
