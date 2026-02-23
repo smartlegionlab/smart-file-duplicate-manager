@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
     QTreeWidget, QTreeWidgetItem, QProgressBar, QMessageBox,
     QFileDialog, QSplitter, QHeaderView, QAbstractItemView,
     QGroupBox, QGridLayout, QScrollArea, QSpinBox, QDialog,
-    QTextEdit, QDialogButtonBox, QMenu, QApplication
+    QTextEdit, QDialogButtonBox, QMenu, QApplication, QFrame
 )
 from PyQt6.QtCore import Qt, QRegularExpression, QPoint, QSettings
 from PyQt6.QtGui import QFont, QAction, QKeySequence, QRegularExpressionValidator, QColor
@@ -52,6 +52,9 @@ class MainWindow(QMainWindow):
 
         self.current_group = None
         self.scan_worker = None
+
+        self.scan_settings_visible = True
+        self.group_details_visible = False
 
         self.setup_ui()
         self.setup_menu()
@@ -124,8 +127,9 @@ class MainWindow(QMainWindow):
         center_panel = self.create_center_panel()
         self.right_splitter.addWidget(center_panel)
 
-        bottom_panel = self.create_bottom_panel()
-        self.right_splitter.addWidget(bottom_panel)
+        self.bottom_panel = self.create_bottom_panel()
+        self.bottom_panel.setVisible(False)
+        self.right_splitter.addWidget(self.bottom_panel)
 
         self.right_splitter.setSizes([500, 500])
 
@@ -147,9 +151,24 @@ class MainWindow(QMainWindow):
         layout.setSpacing(10)
         layout.setContentsMargins(5, 5, 5, 5)
 
-        scan_group = QGroupBox("Scan Settings")
-        scan_layout = QVBoxLayout(scan_group)
+        scan_group_header = QWidget()
+        scan_group_header_layout = QHBoxLayout(scan_group_header)
+        scan_group_header_layout.setContentsMargins(5, 5, 5, 5)
+
+        scan_group_title = QLabel("Scan Settings")
+        title_font = QFont()
+        title_font.setBold(True)
+        scan_group_title.setFont(title_font)
+
+        scan_group_header_layout.addWidget(scan_group_title)
+        scan_group_header_layout.addStretch()
+
+        layout.addWidget(scan_group_header)
+
+        self.scan_settings_widget = QWidget()
+        scan_layout = QVBoxLayout(self.scan_settings_widget)
         scan_layout.setSpacing(8)
+        scan_layout.setContentsMargins(5, 5, 5, 5)
 
         path_label = QLabel("Path:")
         self.path_edit = QLineEdit()
@@ -222,7 +241,7 @@ class MainWindow(QMainWindow):
         scan_btn_layout.addWidget(self.reset_btn)
         scan_layout.addLayout(scan_btn_layout)
 
-        layout.addWidget(scan_group)
+        layout.addWidget(self.scan_settings_widget)
 
         filters_group = QGroupBox("Filters")
         filters_layout = QGridLayout(filters_group)
@@ -344,31 +363,42 @@ class MainWindow(QMainWindow):
         layout.setSpacing(5)
         layout.setContentsMargins(5, 5, 5, 5)
 
-        group_info_layout = QHBoxLayout()
+        header_widget = QWidget()
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(0, 0, 0, 0)
 
         self.right_title = QLabel("Group Details")
         title_font = QFont()
         title_font.setBold(True)
         self.right_title.setFont(title_font)
-        group_info_layout.addWidget(self.right_title)
 
-        group_info_layout.addWidget(QLabel("|"))
+        self.toggle_details_btn = QPushButton("▼")
+        self.toggle_details_btn.setToolTip("Toggle Group Details panel")
+        self.toggle_details_btn.clicked.connect(self.toggle_group_details)
 
+        header_layout.addWidget(self.right_title)
+        header_layout.addStretch()
+        header_layout.addWidget(self.toggle_details_btn)
+
+        layout.addWidget(header_widget)
+
+        separator = QFrame()
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
+        separator.setStyleSheet("background-color: #404040; max-height: 1px;")
+        layout.addWidget(separator)
+
+        info_layout = QHBoxLayout()
         self.group_size_label = QLabel("Size: -")
-        group_info_layout.addWidget(self.group_size_label)
-
-        group_info_layout.addWidget(QLabel("|"))
-
+        info_layout.addWidget(self.group_size_label)
+        info_layout.addWidget(QLabel("|"))
         self.group_copies_label = QLabel("Copies: -")
-        group_info_layout.addWidget(self.group_copies_label)
-
-        group_info_layout.addWidget(QLabel("|"))
-
+        info_layout.addWidget(self.group_copies_label)
+        info_layout.addWidget(QLabel("|"))
         self.group_total_label = QLabel("Total: -")
-        group_info_layout.addWidget(self.group_total_label)
-
-        group_info_layout.addStretch()
-        layout.addLayout(group_info_layout)
+        info_layout.addWidget(self.group_total_label)
+        info_layout.addStretch()
+        layout.addLayout(info_layout)
 
         self.files_tree = QTreeWidget()
         self.files_tree.setHeaderLabels(["", "File Name", "Size", "Date"])
@@ -414,6 +444,18 @@ class MainWindow(QMainWindow):
         layout.addStretch()
 
         return panel
+
+    def toggle_group_details(self):
+        self.group_details_visible = not self.group_details_visible
+        self.bottom_panel.setVisible(self.group_details_visible)
+        self.toggle_details_btn.setText("▼" if self.group_details_visible else "▶")
+        self.toggle_details_btn.setToolTip(
+            "Show Group Details" if not self.group_details_visible else "Hide Group Details")
+
+        if self.group_details_visible:
+            self.right_splitter.setSizes([500, 500])
+        else:
+            self.right_splitter.setSizes([1000, 0])
 
     def setup_menu(self):
         menubar = self.menuBar()
@@ -767,6 +809,9 @@ class MainWindow(QMainWindow):
 
         group = selected[0].data(0, Qt.ItemDataRole.UserRole)
         self.current_group = group
+
+        if not self.group_details_visible:
+            self.toggle_group_details()
 
         self.right_title.setText(f"Group: {group.id}")
         self.group_size_label.setText(f"Size: {group.size_str}")
