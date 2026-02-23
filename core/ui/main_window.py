@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QLineEdit, QComboBox, QCheckBox,
     QTreeWidget, QTreeWidgetItem, QProgressBar, QMessageBox,
-    QFileDialog, QSplitter, QFrame, QHeaderView, QAbstractItemView,
+    QFileDialog, QSplitter, QHeaderView, QAbstractItemView,
     QGroupBox, QGridLayout, QScrollArea, QSpinBox, QDialog,
     QTextEdit, QDialogButtonBox, QMenu, QApplication
 )
@@ -81,77 +81,54 @@ class MainWindow(QMainWindow):
 
     def setup_ui(self):
         self.setWindowTitle(f"{self.config.app_name} v{self.config.version}")
-        self.setMinimumSize(1280, 720)
+        self.setMinimumSize(800, 600)
 
         central = QWidget()
         self.setCentralWidget(central)
         main_layout = QVBoxLayout(central)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
-
-        content = QWidget()
-        content_layout = QHBoxLayout(content)
-        content_layout.setContentsMargins(10, 10, 10, 10)
-        content_layout.setSpacing(10)
-
-        left_scroll = QScrollArea()
-        left_scroll.setWidgetResizable(True)
-        left_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        left_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        left_panel = self.create_left_panel()
-        left_scroll.setWidget(left_panel)
-        left_scroll.setMinimumWidth(400)
-
-        center_right_splitter = QSplitter(Qt.Orientation.Horizontal)
-        center_right_splitter.setHandleWidth(5)
-        center_right_splitter.setChildrenCollapsible(False)
-        center_right_splitter.setStyleSheet("QSplitter::handle { background-color: #404040; }")
-
-        center_scroll = QScrollArea()
-        center_scroll.setWidgetResizable(True)
-        center_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        center_panel = self.create_center_panel()
-        center_scroll.setWidget(center_panel)
-
-        right_scroll = QScrollArea()
-        right_scroll.setWidgetResizable(True)
-        right_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        right_panel = self.create_right_panel()
-        right_scroll.setWidget(right_panel)
-
-        center_right_splitter.addWidget(center_scroll)
-        center_right_splitter.addWidget(right_scroll)
-        center_right_splitter.setSizes([500, 500])
+        main_layout.setContentsMargins(5, 5, 5, 5)
+        main_layout.setSpacing(3)
 
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
         main_splitter.setHandleWidth(5)
         main_splitter.setChildrenCollapsible(False)
         main_splitter.setStyleSheet("QSplitter::handle { background-color: #404040; }")
-        main_splitter.addWidget(left_scroll)
-        main_splitter.addWidget(center_right_splitter)
-        main_splitter.setSizes([280, 900])
 
-        content_layout.addWidget(main_splitter)
+        left_panel = self.create_left_panel()
+        left_panel.setMinimumWidth(250)
+        left_panel.setMaximumWidth(400)
+        main_splitter.addWidget(left_panel)
+
+        right_splitter = QSplitter(Qt.Orientation.Vertical)
+        right_splitter.setHandleWidth(5)
+        right_splitter.setChildrenCollapsible(False)
+        right_splitter.setStyleSheet("QSplitter::handle { background-color: #404040; }")
+
+        center_panel = self.create_center_panel()
+        right_splitter.addWidget(center_panel)
+
+        bottom_panel = self.create_bottom_panel()
+        right_splitter.addWidget(bottom_panel)
+
+        right_splitter.setSizes([400, 200])
+
+        main_splitter.addWidget(right_splitter)
+
+        main_splitter.setSizes([300, 600])
+
+        main_layout.addWidget(main_splitter, 1)
 
         progress_panel = self.create_progress_panel()
-        status_panel = self.create_status_panel()
-
-        main_layout.addWidget(content)
         main_layout.addWidget(progress_panel)
+
+        status_panel = self.create_status_panel()
         main_layout.addWidget(status_panel)
 
     def create_left_panel(self):
         panel = QWidget()
         layout = QVBoxLayout(panel)
         layout.setSpacing(10)
-
-        title = QLabel(f"{self.config.app_name}")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_font = QFont()
-        title_font.setPointSize(ModernStyle.FONT_SIZE_TITLE)
-        title_font.setBold(True)
-        title.setFont(title_font)
-        layout.addWidget(title)
+        layout.setContentsMargins(5, 5, 5, 5)
 
         scan_group = QGroupBox("Scan Settings")
         scan_layout = QVBoxLayout(scan_group)
@@ -269,33 +246,29 @@ class MainWindow(QMainWindow):
         filters_layout.addWidget(self.threads_spin, 4, 1)
 
         layout.addWidget(filters_group)
-
         layout.addStretch()
+
         return panel
 
     def create_center_panel(self):
         panel = QWidget()
         layout = QVBoxLayout(panel)
         layout.setSpacing(5)
+        layout.setContentsMargins(5, 5, 5, 5)
 
-        title = QLabel("Duplicate Groups")
-        title_font = QFont()
-        title_font.setBold(True)
-        title.setFont(title_font)
-        layout.addWidget(title)
-
+        search_layout = QHBoxLayout()
+        search_layout.addWidget(QLabel("Search:"))
         self.search_edit = QLineEdit()
-        self.search_edit.setPlaceholderText("Search by filename...")
+        self.search_edit.setPlaceholderText("Filter by filename...")
         self.search_edit.textChanged.connect(self.filter_groups)
-        layout.addWidget(self.search_edit)
+        search_layout.addWidget(self.search_edit)
+        layout.addLayout(search_layout)
 
-        stats_group = QGroupBox("Scan Statistics")
-        stats_layout = QVBoxLayout(stats_group)
-
+        stats_layout = QHBoxLayout()
         self.stats_total_label = QLabel("Files: -")
         self.stats_dupes_label = QLabel("Duplicates: -")
         self.stats_groups_label = QLabel("Groups: -")
-        self.stats_space_label = QLabel("Space to free: -")
+        self.stats_space_label = QLabel("Space: -")
         self.stats_time_label = QLabel("Time: -")
 
         stats_layout.addWidget(self.stats_total_label)
@@ -303,34 +276,8 @@ class MainWindow(QMainWindow):
         stats_layout.addWidget(self.stats_groups_label)
         stats_layout.addWidget(self.stats_space_label)
         stats_layout.addWidget(self.stats_time_label)
-
-        layout.addWidget(stats_group)
-
-        action_group = QGroupBox("Actions")
-        action_layout = QVBoxLayout(action_group)
-        action_layout.setSpacing(5)
-
-        selection_layout = QHBoxLayout()
-        self.select_all_btn = QPushButton("Select All")
-        self.select_all_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_DialogApplyButton))
-        self.select_all_btn.clicked.connect(self.select_all_duplicates)
-        selection_layout.addWidget(self.select_all_btn)
-
-        self.deselect_all_btn = QPushButton("Deselect All")
-        self.deselect_all_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_DialogResetButton))
-        self.deselect_all_btn.clicked.connect(self.deselect_all)
-        selection_layout.addWidget(self.deselect_all_btn)
-
-        action_layout.addLayout(selection_layout)
-
-        self.move_btn = QPushButton("Move Selected")
-        self.move_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_ArrowRight))
-        self.move_btn.setProperty("class", "warning")
-        self.move_btn.setEnabled(False)
-        self.move_btn.clicked.connect(lambda: self.process_duplicates("move"))
-        action_layout.addWidget(self.move_btn)
-
-        layout.addWidget(action_group)
+        stats_layout.addStretch()
+        layout.addLayout(stats_layout)
 
         self.groups_tree = QTreeWidget()
         self.groups_tree.setHeaderLabels(["Group", "Size", "Copies"])
@@ -339,37 +286,51 @@ class MainWindow(QMainWindow):
         self.groups_tree.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.groups_tree.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.groups_tree.itemSelectionChanged.connect(self.on_group_selected)
+        layout.addWidget(self.groups_tree, 1)
 
-        layout.addWidget(self.groups_tree)
+        actions_layout = QHBoxLayout()
+
+        self.select_all_btn = QPushButton("Select All")
+        self.select_all_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_DialogApplyButton))
+        self.select_all_btn.clicked.connect(self.select_all_duplicates)
+        actions_layout.addWidget(self.select_all_btn)
+
+        self.deselect_all_btn = QPushButton("Deselect All")
+        self.deselect_all_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_DialogResetButton))
+        self.deselect_all_btn.clicked.connect(self.deselect_all)
+        actions_layout.addWidget(self.deselect_all_btn)
+
+        actions_layout.addStretch()
+
+        self.move_btn = QPushButton("Move Selected")
+        self.move_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_ArrowRight))
+        self.move_btn.setProperty("class", "warning")
+        self.move_btn.setEnabled(False)
+        self.move_btn.clicked.connect(lambda: self.process_duplicates("move"))
+        actions_layout.addWidget(self.move_btn)
+
+        layout.addLayout(actions_layout)
 
         return panel
 
-    def create_right_panel(self):
+    def create_bottom_panel(self):
         panel = QWidget()
         layout = QVBoxLayout(panel)
         layout.setSpacing(5)
+        layout.setContentsMargins(5, 5, 5, 5)
 
+        title_layout = QHBoxLayout()
         self.right_title = QLabel("Group Details")
         title_font = QFont()
         title_font.setBold(True)
         self.right_title.setFont(title_font)
-        layout.addWidget(self.right_title)
-
-        info_group = QGroupBox("Group Information")
-        info_layout = QVBoxLayout(info_group)
-        info_layout.setSpacing(5)
+        title_layout.addWidget(self.right_title)
 
         self.right_info = QLabel("")
-        self.right_info.setWordWrap(True)
-        info_layout.addWidget(self.right_info)
-
-        layout.addWidget(info_group)
-
-        files_label = QLabel("Files:")
-        files_font = QFont()
-        files_font.setBold(True)
-        files_label.setFont(files_font)
-        layout.addWidget(files_label)
+        self.right_info.setStyleSheet(f"color: {ModernStyle.FG_MEDIUM};")
+        title_layout.addWidget(self.right_info)
+        title_layout.addStretch()
+        layout.addLayout(title_layout)
 
         self.files_tree = QTreeWidget()
         self.files_tree.setHeaderLabels(["", "File Name", "Size", "Date"])
@@ -380,8 +341,7 @@ class MainWindow(QMainWindow):
         self.files_tree.customContextMenuRequested.connect(self.show_file_context_menu)
         self.files_tree.itemChanged.connect(self.on_file_check_changed)
         self.files_tree.itemDoubleClicked.connect(self.on_file_double_clicked)
-
-        layout.addWidget(self.files_tree)
+        layout.addWidget(self.files_tree, 1)
 
         return panel
 
@@ -520,7 +480,7 @@ class MainWindow(QMainWindow):
         help_menu.addAction(report_action)
 
         license_action = QAction("&License", self)
-        license_action.setShortcut(QKeySequence("Ctrl+ALt+L"))
+        license_action.setShortcut(QKeySequence("Ctrl+Alt+L"))
         license_action.triggered.connect(self.show_license)
         help_menu.addAction(license_action)
 
@@ -724,7 +684,7 @@ class MainWindow(QMainWindow):
         self.stats_dupes_label.setText(f"Duplicates: {self.state['duplicate_cnt']}")
         self.stats_groups_label.setText(f"Groups: {len(self.state['groups'])}")
         self.stats_space_label.setText(
-            f"Space to free: {self.format_size(self.state['duplicate_sum'])}"
+            f"Space: {self.format_size(self.state['duplicate_sum'])}"
         )
         self.stats_time_label.setText(
             f"Time: {self.state['scan_time']:.1f}s"
@@ -1143,7 +1103,7 @@ class MainWindow(QMainWindow):
         self.stats_total_label.setText("Files: -")
         self.stats_dupes_label.setText("Duplicates: -")
         self.stats_groups_label.setText("Groups: -")
-        self.stats_space_label.setText("Space to free: -")
+        self.stats_space_label.setText("Space: -")
         self.stats_time_label.setText("Time: -")
 
         self.progress_bar.setValue(0)
