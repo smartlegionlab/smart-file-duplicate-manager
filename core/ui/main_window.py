@@ -110,7 +110,7 @@ class MainWindow(QMainWindow):
         bottom_panel = self.create_bottom_panel()
         right_splitter.addWidget(bottom_panel)
 
-        right_splitter.setSizes([400, 200])
+        right_splitter.setSizes([500, 500])
 
         main_splitter.addWidget(right_splitter)
 
@@ -319,18 +319,31 @@ class MainWindow(QMainWindow):
         layout.setSpacing(5)
         layout.setContentsMargins(5, 5, 5, 5)
 
-        title_layout = QHBoxLayout()
+        group_info_layout = QHBoxLayout()
+
         self.right_title = QLabel("Group Details")
         title_font = QFont()
         title_font.setBold(True)
         self.right_title.setFont(title_font)
-        title_layout.addWidget(self.right_title)
+        group_info_layout.addWidget(self.right_title)
 
-        self.right_info = QLabel("")
-        self.right_info.setStyleSheet(f"color: {ModernStyle.FG_MEDIUM};")
-        title_layout.addWidget(self.right_info)
-        title_layout.addStretch()
-        layout.addLayout(title_layout)
+        group_info_layout.addWidget(QLabel("|"))
+
+        self.group_size_label = QLabel("Size: -")
+        group_info_layout.addWidget(self.group_size_label)
+
+        group_info_layout.addWidget(QLabel("|"))
+
+        self.group_copies_label = QLabel("Copies: -")
+        group_info_layout.addWidget(self.group_copies_label)
+
+        group_info_layout.addWidget(QLabel("|"))
+
+        self.group_total_label = QLabel("Total: -")
+        group_info_layout.addWidget(self.group_total_label)
+
+        group_info_layout.addStretch()
+        layout.addLayout(group_info_layout)
 
         self.files_tree = QTreeWidget()
         self.files_tree.setHeaderLabels(["", "File Name", "Size", "Date"])
@@ -560,7 +573,9 @@ class MainWindow(QMainWindow):
         self.groups_tree.clear()
         self.files_tree.clear()
         self.right_title.setText("Group Details")
-        self.right_info.setText("")
+        self.group_size_label.setText("Size: -")
+        self.group_copies_label.setText("Copies: -")
+        self.group_total_label.setText("Total: -")
 
         self.progress_bar.setValue(0)
         self.status_label.setText("Scanning started...")
@@ -711,18 +726,18 @@ class MainWindow(QMainWindow):
             self.current_group = None
             self.files_tree.clear()
             self.right_title.setText("Group Details")
-            self.right_info.setText("")
+            self.group_size_label.setText("Size: -")
+            self.group_copies_label.setText("Copies: -")
+            self.group_total_label.setText("Total: -")
             return
 
         group = selected[0].data(0, Qt.ItemDataRole.UserRole)
         self.current_group = group
 
         self.right_title.setText(f"Group: {group.id}")
-        self.right_info.setText(
-            f"• Size: {group.size_str}\n"
-            f"• Copies: {group.file_count}\n"
-            f"• Total: {self.format_size(group.size * group.file_count)}"
-        )
+        self.group_size_label.setText(f"Size: {group.size_str}")
+        self.group_copies_label.setText(f"Copies: {group.file_count}")
+        self.group_total_label.setText(f"Total: {self.format_size(group.size * group.file_count)}")
 
         self.files_tree.clear()
 
@@ -1098,7 +1113,9 @@ class MainWindow(QMainWindow):
         self.files_tree.clear()
 
         self.right_title.setText("Group Details")
-        self.right_info.setText("")
+        self.group_size_label.setText("Size: -")
+        self.group_copies_label.setText("Copies: -")
+        self.group_total_label.setText("Total: -")
 
         self.stats_total_label.setText("Files: -")
         self.stats_dupes_label.setText("Duplicates: -")
