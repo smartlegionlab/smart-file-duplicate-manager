@@ -14,8 +14,8 @@ from PyQt6.QtWidgets import (
     QGroupBox, QGridLayout, QScrollArea, QSpinBox, QDialog,
     QTextEdit, QDialogButtonBox, QMenu, QApplication
 )
-from PyQt6.QtCore import Qt, QRegularExpression, QPoint
-from PyQt6.QtGui import QFont, QAction, QKeySequence, QRegularExpressionValidator
+from PyQt6.QtCore import Qt, QRegularExpression, QPoint, QSettings
+from PyQt6.QtGui import QFont, QAction, QKeySequence, QRegularExpressionValidator, QColor
 
 from core.models.config import Config
 from core.models.dupe_group import DuplicateGroup
@@ -55,8 +55,11 @@ class MainWindow(QMainWindow):
 
         self.setup_ui()
         self.setup_menu()
+        self.restore_splitter_state()
 
     def closeEvent(self, event):
+        self.save_splitter_state()
+
         if self.state['is_scanning']:
             reply = QMessageBox.question(
                 self, "Confirm Exit",
@@ -79,6 +82,20 @@ class MainWindow(QMainWindow):
 
         event.accept()
 
+    def save_splitter_state(self):
+        settings = QSettings("SmartFileDuplicateManager", "MainWindow")
+        settings.setValue("main_splitter", self.main_splitter.saveState())
+        settings.setValue("right_splitter", self.right_splitter.saveState())
+
+    def restore_splitter_state(self):
+        settings = QSettings("SmartFileDuplicateManager", "MainWindow")
+        main_state = settings.value("main_splitter")
+        right_state = settings.value("right_splitter")
+        if main_state:
+            self.main_splitter.restoreState(main_state)
+        if right_state:
+            self.right_splitter.restoreState(right_state)
+
     def setup_ui(self):
         self.setWindowTitle(f"{self.config.app_name} v{self.config.version}")
         self.setMinimumSize(800, 600)
@@ -89,34 +106,34 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(5, 5, 5, 5)
         main_layout.setSpacing(3)
 
-        main_splitter = QSplitter(Qt.Orientation.Horizontal)
-        main_splitter.setHandleWidth(5)
-        main_splitter.setChildrenCollapsible(False)
-        main_splitter.setStyleSheet("QSplitter::handle { background-color: #404040; }")
+        self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.main_splitter.setHandleWidth(5)
+        self.main_splitter.setChildrenCollapsible(False)
+        self.main_splitter.setStyleSheet("QSplitter::handle { background-color: #404040; }")
 
         left_panel = self.create_left_panel()
         left_panel.setMinimumWidth(250)
         left_panel.setMaximumWidth(400)
-        main_splitter.addWidget(left_panel)
+        self.main_splitter.addWidget(left_panel)
 
-        right_splitter = QSplitter(Qt.Orientation.Vertical)
-        right_splitter.setHandleWidth(5)
-        right_splitter.setChildrenCollapsible(False)
-        right_splitter.setStyleSheet("QSplitter::handle { background-color: #404040; }")
+        self.right_splitter = QSplitter(Qt.Orientation.Vertical)
+        self.right_splitter.setHandleWidth(5)
+        self.right_splitter.setChildrenCollapsible(False)
+        self.right_splitter.setStyleSheet("QSplitter::handle { background-color: #404040; }")
 
         center_panel = self.create_center_panel()
-        right_splitter.addWidget(center_panel)
+        self.right_splitter.addWidget(center_panel)
 
         bottom_panel = self.create_bottom_panel()
-        right_splitter.addWidget(bottom_panel)
+        self.right_splitter.addWidget(bottom_panel)
 
-        right_splitter.setSizes([500, 500])
+        self.right_splitter.setSizes([500, 500])
 
-        main_splitter.addWidget(right_splitter)
+        self.main_splitter.addWidget(self.right_splitter)
 
-        main_splitter.setSizes([300, 600])
+        self.main_splitter.setSizes([300, 600])
 
-        main_layout.addWidget(main_splitter, 1)
+        main_layout.addWidget(self.main_splitter, 1)
 
         progress_panel = self.create_progress_panel()
         main_layout.addWidget(progress_panel)
@@ -138,6 +155,7 @@ class MainWindow(QMainWindow):
         self.path_edit = QLineEdit()
         self.path_edit.setText(self.state['root_path'])
         self.path_edit.textChanged.connect(lambda t: self.state.update({'root_path': t}))
+        self.path_edit.setToolTip(self.state['root_path'])
 
         path_btn = QPushButton()
         path_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_DirIcon))
@@ -186,15 +204,18 @@ class MainWindow(QMainWindow):
         self.scan_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_MediaPlay))
         self.scan_btn.setProperty("class", "primary")
         self.scan_btn.clicked.connect(self.start_scan)
+        self.scan_btn.setToolTip("Start scanning for duplicates (Ctrl+R)")
 
         self.cancel_btn = QPushButton("Cancel")
         self.cancel_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_DialogCancelButton))
         self.cancel_btn.setVisible(False)
         self.cancel_btn.clicked.connect(self.cancel_scan)
+        self.cancel_btn.setToolTip("Cancel current scan (Ctrl+Shift+C)")
 
         self.reset_btn = QPushButton("Reset")
         self.reset_btn.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_BrowserReload))
         self.reset_btn.clicked.connect(self.reset_all)
+        self.reset_btn.setToolTip("Reset all scan results (Ctrl+X)")
 
         scan_btn_layout.addWidget(self.scan_btn)
         scan_btn_layout.addWidget(self.cancel_btn)
@@ -272,9 +293,13 @@ class MainWindow(QMainWindow):
         self.stats_time_label = QLabel("Time: -")
 
         stats_layout.addWidget(self.stats_total_label)
+        stats_layout.addWidget(QLabel("|"))
         stats_layout.addWidget(self.stats_dupes_label)
+        stats_layout.addWidget(QLabel("|"))
         stats_layout.addWidget(self.stats_groups_label)
+        stats_layout.addWidget(QLabel("|"))
         stats_layout.addWidget(self.stats_space_label)
+        stats_layout.addWidget(QLabel("|"))
         stats_layout.addWidget(self.stats_time_label)
         stats_layout.addStretch()
         layout.addLayout(stats_layout)
@@ -381,6 +406,10 @@ class MainWindow(QMainWindow):
         self.status_label = QLabel("Ready")
         self.status_label.setStyleSheet(f"color: {ModernStyle.FG_MEDIUM};")
         layout.addWidget(self.status_label)
+
+        self.scanning_indicator = QLabel("")
+        self.scanning_indicator.setMaximumWidth(16)
+        layout.addWidget(self.scanning_indicator)
 
         layout.addStretch()
 
@@ -504,6 +533,7 @@ class MainWindow(QMainWindow):
         if folder:
             self.path_edit.setText(folder)
             self.state['root_path'] = folder
+            self.path_edit.setToolTip(folder)
             self.status_label.setText(f"Scan folder set to: {folder}")
 
     def browse_dupes_folder(self):
@@ -579,6 +609,7 @@ class MainWindow(QMainWindow):
 
         self.progress_bar.setValue(0)
         self.status_label.setText("Scanning started...")
+        self.scanning_indicator.setText("⏳")
 
         self.scan_worker = ScanWorker(
             self.state['root_path'],
@@ -619,6 +650,7 @@ class MainWindow(QMainWindow):
         self.dry_run_check.setEnabled(True)
         self.progress_bar.setValue(0)
         self.status_label.setText("Scan cancelled")
+        self.scanning_indicator.setText("")
 
     def on_scan_progress(self, current, total, message):
         if total > 0:
@@ -675,10 +707,12 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(self.progress_bar.maximum())
         status_msg = f"Scan complete. Found {len(self.state['groups'])} duplicate groups in {scan_time:.1f}s"
         self.status_label.setText(status_msg)
+        self.scanning_indicator.setText("")
 
     def on_scan_error(self, error_msg):
         QMessageBox.critical(self, "Scan Error", f"An error occurred during scan:\n{error_msg}")
         self.status_label.setText(f"Scan error: {error_msg}")
+        self.scanning_indicator.setText("")
         self.cancel_scan()
 
     def refresh_ui(self):
@@ -755,6 +789,7 @@ class MainWindow(QMainWindow):
                 item.setIcon(1, self.style().standardIcon(self.style().StandardPixmap.SP_DialogApplyButton))
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
                 item.setCheckState(0, Qt.CheckState.Unchecked)
+                item.setBackground(1, QColor(42, 130, 218, 50))
 
             self.files_tree.addTopLevelItem(item)
 
