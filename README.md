@@ -1,4 +1,4 @@
-# Smart File Duplicate Manager <sup>v1.1.6</sup>
+# Smart File Duplicate Manager <sup>v1.2.0</sup>
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/smartlegionlab/smart-file-duplicate-manager)](https://github.com/smartlegionlab/smart-file-duplicate-manager/)
 ![GitHub top language](https://img.shields.io/github/languages/top/smartlegionlab/smart-file-duplicate-manager)
@@ -218,4 +218,4 @@ THE USER IS STRONGLY ADVISED TO:
 
 ## 🖼️ Screenshot
 
-![Smart File Duplicate Manager](https://github.com/smartlegionlab/smart-file-duplicate-manager/blob/master/data/images/smart-duplicate-cleaner.png)
+![Smart File Duplicate Manager](https://github.com/smartlegionlab/smart-file-duplicate-manager/blob/master/data/images/smart-file-duplicate-manager.png)
