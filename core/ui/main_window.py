@@ -58,10 +58,8 @@ class MainWindow(QMainWindow):
 
         self.setup_ui()
         self.setup_menu()
-        self.restore_splitter_state()
 
     def closeEvent(self, event):
-        self.save_splitter_state()
 
         if self.state['is_scanning']:
             reply = QMessageBox.question(
@@ -84,20 +82,6 @@ class MainWindow(QMainWindow):
                 return
 
         event.accept()
-
-    def save_splitter_state(self):
-        settings = QSettings("SmartFileDuplicateManager", "MainWindow")
-        settings.setValue("main_splitter", self.main_splitter.saveState())
-        settings.setValue("right_splitter", self.right_splitter.saveState())
-
-    def restore_splitter_state(self):
-        settings = QSettings("SmartFileDuplicateManager", "MainWindow")
-        main_state = settings.value("main_splitter")
-        right_state = settings.value("right_splitter")
-        if main_state:
-            self.main_splitter.restoreState(main_state)
-        if right_state:
-            self.right_splitter.restoreState(right_state)
 
     def setup_ui(self):
         self.setWindowTitle(f"{self.config.app_name} v{self.config.version}")
