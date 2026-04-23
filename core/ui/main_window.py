@@ -15,12 +15,13 @@ from PyQt6.QtWidgets import (
     QTextEdit, QDialogButtonBox, QMenu, QApplication, QFrame
 )
 from PyQt6.QtCore import Qt, QRegularExpression, QPoint, QSettings
-from PyQt6.QtGui import QFont, QAction, QKeySequence, QRegularExpressionValidator, QColor
+from PyQt6.QtGui import QFont, QAction, QKeySequence, QRegularExpressionValidator, QColor, QIcon
 
 from core.models.config import Config
 from core.models.dupe_group import DuplicateGroup
 from core.models.file_info import FileInfo
 from core.ui.dark_theme import ModernStyle
+from core.ui.desktop_entry_dialog import DesktopEntryDialog
 from core.ui.restore_dialog import RestoreDialog
 from core.ui.scan_worker import ScanWorker
 
@@ -56,8 +57,25 @@ class MainWindow(QMainWindow):
         self.scan_settings_visible = True
         self.group_details_visible = False
 
+        self.setup_application_icon()
+
         self.setup_ui()
         self.setup_menu()
+
+    def setup_application_icon(self):
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "icons", "icon.png")
+
+        if not os.path.exists(icon_path):
+            icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
+
+        if os.path.exists(icon_path):
+            icon = QIcon(icon_path)
+            self.setWindowIcon(icon)
+
+    def create_desktop_entry(self):
+
+        dialog = DesktopEntryDialog(self)
+        dialog.exec()
 
     def closeEvent(self, event):
 
@@ -445,6 +463,13 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
 
         file_menu = menubar.addMenu("&File")
+
+        if sys.platform.startswith('linux'):
+            desktop_entry_action = QAction('Create Desktop Entry...', self)
+            desktop_entry_action.triggered.connect(self.create_desktop_entry)
+            file_menu.addAction(desktop_entry_action)
+            file_menu.addSeparator()
+
         select_scan_action = QAction("&Select Scan Folder...", self)
         select_scan_action.setShortcut(QKeySequence("Ctrl+Shift+O"))
         select_scan_action.triggered.connect(self.browse_scan_folder)

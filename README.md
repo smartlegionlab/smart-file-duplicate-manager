@@ -1,4 +1,4 @@
-# Smart File Duplicate Manager <sup>v1.2.2</sup>
+# Smart File Duplicate Manager <sup>v1.2.3</sup>
 
 **Smart File Duplicate Manager** is an app for finding and managing duplicate files. It's written on Python using PyQt6.
 
@@ -93,6 +93,35 @@ python app.py
 3. Click "Start Scan."
 4. After scanning is complete, select the desired files (or use "Select All").
 5. To restore previously moved files, use the "Tools" → "Restore Files" menu.
+
+---
+
+### Desktop Integration (Linux)
+
+**Creating Application Shortcuts:**
+
+The application allows you to create desktop entries directly from the menu:
+
+1. **Go to File → Create Desktop Entry**
+2. **Choose locations:**
+   - ✓ Application Menu (`~/.local/share/applications/`) - adds to system app menu
+   - □ Desktop (`~/Desktop/`) - creates shortcut on desktop
+3. **Click "Create Entry"**
+
+**What happens:**
+- Creates `.desktop` file(s) with proper configuration
+- Sets executable permissions automatically
+- Uses application icon if available
+
+**After creation:**
+- **Application Menu**: Log out and back in (or restart desktop) for entry to appear
+- **Desktop shortcut**: May show "Unsecured Application Launcher" warning
+  - Right-click on shortcut → "Allow Launching" or "Trust"
+  - This is a one-time security confirmation
+
+**Note:** This feature is only available on Linux systems with desktop environments that support `.desktop` files (GNOME, KDE, XFCE, etc.).
+
+---
 
 ## Hotkeys
 
