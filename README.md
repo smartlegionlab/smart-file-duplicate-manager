@@ -1,4 +1,4 @@
-# Smart File Duplicate Manager <sup>v1.2.3</sup>
+# Smart File Duplicate Manager <sup>v1.2.4</sup>
 
 **Smart File Duplicate Manager** is an app for finding and managing duplicate files. It's written on Python using PyQt6.
 
@@ -73,6 +73,8 @@ source venv/bin/activate
 
 # Installing dependencies
 pip install -r requirements.txt
+
+sudo apt install libxcb-cursor0
 
 # Running
 python app.py
