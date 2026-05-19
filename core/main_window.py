@@ -7,12 +7,9 @@ from pathlib import Path
 from datetime import datetime
 
 from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLabel, QLineEdit, QComboBox, QCheckBox,
-    QTreeWidget, QTreeWidgetItem, QProgressBar, QMessageBox,
-    QFileDialog, QSplitter, QHeaderView, QAbstractItemView,
-    QGroupBox, QGridLayout, QScrollArea, QSpinBox, QDialog,
-    QTextEdit, QDialogButtonBox, QMenu, QApplication, QFrame
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QLineEdit, QComboBox, QCheckBox,
+    QTreeWidget, QTreeWidgetItem, QProgressBar, QMessageBox, QFileDialog, QSplitter, QHeaderView, QAbstractItemView,
+    QGroupBox, QGridLayout, QScrollArea, QSpinBox, QDialog, QTextEdit, QDialogButtonBox, QMenu, QApplication, QFrame
 )
 from PyQt6.QtCore import Qt, QRegularExpression, QPoint
 from PyQt6.QtGui import QFont, QAction, QKeySequence, QRegularExpressionValidator, QColor, QIcon
@@ -25,7 +22,6 @@ from core.ui.desktop_entry_dialog import DesktopEntryDialog
 from core.ui.move_worker import MoveWorker
 from core.ui.restore_dialog import RestoreDialog
 from core.ui.scan_worker import ScanWorker
-
 from core.ui.move_progress_dialog import MoveProgressDialog
 
 
@@ -66,7 +62,8 @@ class MainWindow(QMainWindow):
         self.setup_menu()
 
     def setup_application_icon(self):
-        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "icons", "icon.png")
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "icons",
+                                 "icon.png")
 
         if not os.path.exists(icon_path):
             icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
@@ -76,12 +73,10 @@ class MainWindow(QMainWindow):
             self.setWindowIcon(icon)
 
     def create_desktop_entry(self):
-
         dialog = DesktopEntryDialog(self)
         dialog.exec()
 
     def closeEvent(self, event):
-
         if self.state['is_scanning']:
             reply = QMessageBox.question(
                 self, "Confirm Exit",
@@ -105,7 +100,7 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def setup_ui(self):
-        self.setWindowTitle(f"{self.config.app_name} v{self.config.version}")
+        self.setWindowTitle(f"{self.config.app_name}")
         self.setMinimumSize(800, 600)
 
         central = QWidget()
@@ -1046,24 +1041,6 @@ class MainWindow(QMainWindow):
         self.status_label.setText("All duplicates deselected")
         QMessageBox.information(self, "Success", "All files deselected")
 
-    def save_move_log(self, moved_files, target_folder):
-        log_data = {
-            'timestamp': datetime.now().isoformat(),
-            'target_folder': target_folder,
-            'files': moved_files,
-            'total_files': len(moved_files),
-            'total_size': sum(f['size'] for f in moved_files)
-        }
-
-        log_filename = os.path.join(target_folder, 'move_log.json')
-        try:
-            with open(log_filename, 'w', encoding='utf-8') as f:
-                json.dump(log_data, f, indent=2, ensure_ascii=False)
-            return log_filename
-        except Exception as e:
-            QMessageBox.warning(self, "Warning", f"Failed to save move log: {e}")
-            return None
-
     def process_duplicates(self, action):
         if not self.state['groups']:
             QMessageBox.information(self, "Info", "No duplicates to process")
@@ -1087,6 +1064,14 @@ class MainWindow(QMainWindow):
             QMessageBox.information(
                 self, "Info",
                 "No files selected for processing. Use 'Select All' button or manually select files."
+            )
+            return
+
+        if selected_size <= 0:
+            QMessageBox.warning(
+                self, "Warning",
+                f"Selected files have invalid total size: {selected_size} bytes.\n"
+                "This may indicate corrupted file information."
             )
             return
 
@@ -1124,12 +1109,21 @@ class MainWindow(QMainWindow):
         self.move_dialog.exec()
 
     def on_move_completed(self, moved_count, space_freed, errors):
-        self.move_dialog.update_complete(moved_count, space_freed)
+        if space_freed < 0:
+            space_freed = 0
+            for group in self.state['groups']:
+                for file in group.files:
+                    if hasattr(file, 'selected') and file.selected and not file.is_main:
+                        if hasattr(file, 'size') and file.size > 0:
+                            space_freed += file.size
 
-        from PyQt6.QtCore import QTimer
-        QTimer.singleShot(1500, self.move_dialog.accept)
+        if hasattr(self, 'move_dialog') and self.move_dialog:
+            self.move_dialog.update_complete(moved_count, max(0, space_freed))
 
-        result_msg = f"Files moved: {moved_count}\nSpace freed: {self.format_size(space_freed)}"
+            from PyQt6.QtCore import QTimer
+            QTimer.singleShot(1500, self.move_dialog.accept)
+
+        result_msg = f"Files moved: {moved_count}\nSpace freed: {self.format_size(max(0, space_freed))}"
 
         if self.state['dry_run']:
             result_msg = f"TEST MODE - no files were actually moved\n\n{result_msg}"
@@ -1140,7 +1134,7 @@ class MainWindow(QMainWindow):
                 result_msg += f"\n... and {len(errors) - 10} more errors"
 
         QMessageBox.information(self, "Move Complete", result_msg)
-        self.status_label.setText(f"Moved {moved_count} files, freed {self.format_size(space_freed)}")
+        self.status_label.setText(f"Moved {moved_count} files, freed {self.format_size(max(0, space_freed))}")
 
         self.reset_all()
 
@@ -1346,11 +1340,23 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def format_size(size):
-        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-            if size < 1024.0:
-                return f"{size:.1f} {unit}"
-            size /= 1024.0
-        return f"{size:.1f} PB"
+        if size < 0:
+            return "0 B (error)"
+        if size == 0:
+            return "0 B"
+
+        if size < 1024:
+            return f"{size} B"
+
+        units = ['KB', 'MB', 'GB', 'TB', 'PB']
+        size_float = float(size)
+
+        for unit in units:
+            size_float /= 1024.0
+            if size_float < 1024.0:
+                return f"{size_float:.1f} {unit}"
+
+        return f"{size_float:.1f} PB"
 
     def show_file_details(self, file):
         if not file:

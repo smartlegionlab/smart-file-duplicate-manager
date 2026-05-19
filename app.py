@@ -3,7 +3,7 @@ import sys
 
 from PyQt6.QtWidgets import QApplication
 from core.ui.dark_theme import ModernStyle
-from core.ui.main_window import MainWindow
+from core.main_window import MainWindow
 
 
 def main():

@@ -1,6 +1,5 @@
 # Copyright (©) 2026, Alexander Suvorov. All rights reserved.
 import os
-
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
     QProgressBar, QPushButton, QMessageBox, QApplication
@@ -63,17 +62,28 @@ class MoveProgressDialog(QDialog):
             self.move(x, y)
 
     def update_progress(self, current: int, total: int, current_file: str, space_freed: int):
+        if space_freed < 0:
+            space_freed = 0
+
+        if current > self.progress_bar.maximum():
+            self.progress_bar.setMaximum(current)
+
         self.progress_bar.setValue(current)
-        self.info_label.setText(f"Moving: {current} of {total} files ({self._format_size(space_freed)} freed)")
+
+        freed_str = self._format_size(space_freed)
+        self.info_label.setText(f"Moving: {current} of {total} files ({freed_str} freed)")
 
         filename = os.path.basename(current_file)
         self.current_file_label.setText(f"Current: {filename}")
-
         QApplication.processEvents()
 
     def update_complete(self, moved: int, space_freed: int):
+        if space_freed < 0:
+            space_freed = 0
+
         self.progress_bar.setValue(moved)
-        self.info_label.setText(f"Complete! Moved {moved} files, freed {self._format_size(space_freed)}")
+        freed_str = self._format_size(space_freed)
+        self.info_label.setText(f"Complete! Moved {moved} files, freed {freed_str}")
         self.current_file_label.setText("Operation completed successfully")
         self.cancel_button.setText("Close")
         self.cancel_button.setEnabled(True)
@@ -92,9 +102,21 @@ class MoveProgressDialog(QDialog):
                 self.reject()
 
     @staticmethod
-    def _format_size(size: int) -> str:
-        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-            if size < 1024.0:
-                return f"{size:.1f} {unit}"
-            size /= 1024.0
-        return f"{size:.1f} PB"
+    def _format_size(size):
+        if size < 0:
+            return "0 B"
+        if size == 0:
+            return "0 B"
+
+        if size < 1024:
+            return f"{size} B"
+
+        units = ['KB', 'MB', 'GB', 'TB', 'PB']
+        size_float = float(size)
+
+        for unit in units:
+            size_float /= 1024.0
+            if size_float < 1024.0:
+                return f"{size_float:.1f} {unit}"
+
+        return f"{size_float:.1f} PB"
