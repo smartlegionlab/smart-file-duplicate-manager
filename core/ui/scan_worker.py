@@ -16,37 +16,44 @@ class ScanWorker(QThread):
                  include_ext, exclude_ext, threads):
         super().__init__()
         self.root_path = root_path
-        self.dupes_folder = dupes_folder
+        self.dupes_folder = dupes_folder.rstrip('/\\') + os.sep
         self.min_size = min_size
         self.max_size = max_size
-        self.include_ext = include_ext
-        self.exclude_ext = exclude_ext
         self.threads = threads
         self.is_running = True
         self.last_update_time = time.time()
 
+        self.include_ext_set = None
+        if include_ext and include_ext.strip():
+            self.include_ext_set = set(e.strip().lower() for e in include_ext.split(','))
+
+        self.exclude_ext_set = None
+        if exclude_ext and exclude_ext.strip():
+            self.exclude_ext_set = set(e.strip().lower() for e in exclude_ext.split(','))
+
     def stop(self):
         self.is_running = False
 
-    def _should_process_file(self, path):
+    def _should_process_file(self, path, ext):
         if path.startswith(self.dupes_folder):
             return False
 
-        ext = os.path.splitext(path)[1].lower()
-
-        if self.include_ext:
-            include_list = [e.strip().lower() for e in self.include_ext.split(',')]
-            if ext not in include_list:
-                return False
-
-        if self.exclude_ext:
-            exclude_list = [e.strip().lower() for e in self.exclude_ext.split(',')]
-            if ext in exclude_list:
-                return False
+        if self.include_ext_set and ext not in self.include_ext_set:
+            return False
+        if self.exclude_ext_set and ext in self.exclude_ext_set:
+            return False
 
         return True
 
-    def _hash_file(self, path):
+    def _quick_hash(self, path):
+        try:
+            with open(path, 'rb') as f:
+                first_bytes = f.read(1024)
+                return hashlib.md5(first_bytes).hexdigest()
+        except (IOError, OSError):
+            return None
+
+    def _full_hash(self, path):
         try:
             import xxhash
             hasher = xxhash.xxh64()
@@ -74,6 +81,7 @@ class ScanWorker(QThread):
         file_mod_times = {}
         total_files = 0
         self.last_update_time = time.time()
+        last_total_files = 0
 
         try:
             self.progress_updated.emit(0, 0, "Scanning directory structure...")
@@ -89,9 +97,10 @@ class ScanWorker(QThread):
                     if not self.is_running:
                         return
 
+                    ext = os.path.splitext(file)[1].lower()
                     path = os.path.join(root, file)
 
-                    if not self._should_process_file(path):
+                    if not self._should_process_file(path, ext):
                         continue
 
                     try:
@@ -106,40 +115,98 @@ class ScanWorker(QThread):
                         total_files += 1
 
                         current_time = time.time()
-                        if total_files % 10 == 0 or current_time - self.last_update_time > 0.5:
-                            self.progress_updated.emit(total_files, 0,
-                                                       f"Scanning files... Found {total_files} files")
+                        if total_files - last_total_files >= 100 or current_time - self.last_update_time > 0.2:
+                            self.progress_updated.emit(total_files, 0, f"Scanning... {total_files} files found")
+                            last_total_files = total_files
                             self.last_update_time = current_time
 
                     except (OSError, IOError):
                         continue
 
-            self.progress_updated.emit(total_files, 0,
-                                       f"Scan complete. Found {total_files} total files")
+            self.progress_updated.emit(total_files, total_files, f"Scan complete. Found {total_files} files")
 
-            total_to_hash = sum(len(paths) for paths in files_by_size.values() if len(paths) > 1)
-
-            if total_to_hash == 0:
-                self.scan_finished.emit({}, time.time() - start_time)
-                return
-
-            self.progress_updated.emit(0, total_to_hash,
-                                       f"Starting hashing of {total_to_hash} files...")
-
-            hash_jobs = []
+            potential_dupes = []
             for size, paths in files_by_size.items():
                 if len(paths) > 1:
                     for path in paths:
-                        hash_jobs.append((size, path, file_mod_times.get(path, 0)))
+                        potential_dupes.append((size, path, file_mod_times.get(path, 0)))
+
+            if not potential_dupes:
+                self.scan_finished.emit({}, time.time() - start_time)
+                return
+
+            self.progress_updated.emit(0, len(potential_dupes),
+                                       f"Quick hashing {len(potential_dupes)} potential duplicates (1KB each)...")
+
+            quick_groups = {}
+            processed = 0
+            self.last_update_time = time.time()
+            last_processed = 0
+
+            with ThreadPoolExecutor(max_workers=self.threads) as executor:
+                future_to_data = {
+                    executor.submit(self._quick_hash, path): (size, path, mod_time)
+                    for size, path, mod_time in potential_dupes
+                }
+
+                for future in as_completed(future_to_data):
+                    if not self.is_running:
+                        executor.shutdown(wait=False, cancel_futures=True)
+                        return
+
+                    size, path, mod_time = future_to_data[future]
+                    quick_hash = future.result()
+
+                    if quick_hash:
+                        quick_groups.setdefault(quick_hash, []).append((size, path, mod_time))
+
+                    processed += 1
+
+                    current_time = time.time()
+                    if processed - last_processed >= 20 or current_time - self.last_update_time > 0.1:
+                        percent = int(processed * 100 / len(potential_dupes))
+                        self.progress_updated.emit(
+                            processed, len(potential_dupes),
+                            f"Quick hashing: {processed}/{len(potential_dupes)} ({percent}%)"
+                        )
+                        last_processed = processed
+                        self.last_update_time = current_time
+
+            candidates = {}
+
+            for quick_hash, files in quick_groups.items():
+                size_map = {}
+                for size, path, mod_time in files:
+                    size_map.setdefault(size, []).append((path, mod_time))
+
+                for size, sized_files in size_map.items():
+                    if len(sized_files) > 1:
+                        key = (size, quick_hash)
+                        candidates[key] = sized_files
+
+            total_to_full_hash = sum(len(files) for files in candidates.values())
+
+            if total_to_full_hash == 0:
+                self.scan_finished.emit({}, time.time() - start_time)
+                return
+
+            self.progress_updated.emit(0, total_to_full_hash,
+                                       f"Full hashing {total_to_full_hash} real candidates...")
 
             results = {}
             processed = 0
             self.last_update_time = time.time()
+            last_processed = 0
+
+            full_hash_jobs = []
+            for files in candidates.values():
+                for path, mod_time in files:
+                    full_hash_jobs.append((path, mod_time))
 
             with ThreadPoolExecutor(max_workers=self.threads) as executor:
                 future_to_path = {
-                    executor.submit(self._hash_file, path): (size, path, mod_time)
-                    for size, path, mod_time in hash_jobs
+                    executor.submit(self._full_hash, path): (path, mod_time)
+                    for path, mod_time in full_hash_jobs
                 }
 
                 for future in as_completed(future_to_path):
@@ -147,26 +214,35 @@ class ScanWorker(QThread):
                         executor.shutdown(wait=False, cancel_futures=True)
                         return
 
-                    size, path, mod_time = future_to_path[future]
-                    hash_value = future.result()
+                    path, mod_time = future_to_path[future]
+                    full_hash = future.result()
 
-                    if hash_value:
-                        results.setdefault(hash_value, []).append((path, size, mod_time))
+                    if full_hash:
+                        try:
+                            size = os.path.getsize(path)
+                            results.setdefault(full_hash, []).append((path, size, mod_time))
+                        except:
+                            pass
 
                     processed += 1
 
                     current_time = time.time()
-                    if processed % 2 == 0 or current_time - self.last_update_time > 0.3:
-                        filename = os.path.basename(path)
-                        percent = int(processed * 100 / total_to_hash)
+                    if processed - last_processed >= 5 or current_time - self.last_update_time > 0.1:
+                        percent = int(processed * 100 / total_to_full_hash)
                         self.progress_updated.emit(
-                            processed, total_to_hash,
-                            f"Hashing: {processed}/{total_to_hash} ({percent}%) - {filename}"
+                            processed, total_to_full_hash,
+                            f"Full hashing: {processed}/{total_to_full_hash} ({percent}%)"
                         )
+                        last_processed = processed
                         self.last_update_time = current_time
 
+            final_results = {}
+            for hash_val, files in results.items():
+                if len(files) > 1:
+                    final_results[hash_val] = files
+
             if self.is_running:
-                self.scan_finished.emit(results, time.time() - start_time)
+                self.scan_finished.emit(final_results, time.time() - start_time)
 
         except Exception as e:
             self.scan_error.emit(str(e))
