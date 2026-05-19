@@ -8,7 +8,7 @@ from PyQt6.QtCore import QThread, pyqtSignal
 
 
 class MoveWorker(QThread):
-    progress_updated = pyqtSignal(int, int, str, int)
+    progress_updated = pyqtSignal(int, int, int)
     move_completed = pyqtSignal(int, int, list)
     move_error = pyqtSignal(str)
 
@@ -63,14 +63,14 @@ class MoveWorker(QThread):
                             if not os.path.exists(file.path):
                                 with self._lock:
                                     self._errors.append(f"{file.name}: file not found")
-                                self.progress_updated.emit(current, total_selected, file.path, self._space_freed)
+                                self.progress_updated.emit(current, total_selected, self._space_freed)
                                 continue
 
                             original_size = file.size
                             if original_size <= 0:
                                 with self._lock:
                                     self._errors.append(f"{file.name}: invalid file size ({original_size})")
-                                self.progress_updated.emit(current, total_selected, file.path, self._space_freed)
+                                self.progress_updated.emit(current, total_selected, self._space_freed)
                                 continue
 
                             ext = os.path.splitext(main_file.path)[1]
@@ -107,7 +107,7 @@ class MoveWorker(QThread):
 
                     with self._lock:
                         current_freed = self._space_freed
-                    self.progress_updated.emit(current, total_selected, file.path, current_freed)
+                    self.progress_updated.emit(current, total_selected, current_freed)
 
             if not self.dry_run and self._moved_files:
                 self.save_move_log()

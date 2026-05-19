@@ -1,5 +1,4 @@
 # Copyright (©) 2026, Alexander Suvorov. All rights reserved.
-import os
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
     QProgressBar, QPushButton, QMessageBox, QApplication
@@ -15,21 +14,21 @@ class MoveProgressDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Moving Files")
         self.setModal(True)
-        self.setMinimumWidth(500)
-        self.setFixedHeight(200)
+        self.setMinimumWidth(400)
+        self.setFixedHeight(150)
 
         layout = QVBoxLayout(self)
-        layout.setSpacing(15)
+        layout.setSpacing(10)
 
         title_label = QLabel("Moving Duplicate Files")
         title_font = QFont()
-        title_font.setPointSize(12)
+        title_font.setPointSize(11)
         title_font.setBold(True)
         title_label.setFont(title_font)
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title_label)
 
-        self.info_label = QLabel(f"Moving {total_files} files ({self._format_size(total_size)})...")
+        self.info_label = QLabel(f"Moving: 0 of {total_files} files")
         self.info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.info_label)
 
@@ -39,19 +38,13 @@ class MoveProgressDialog(QDialog):
         self.progress_bar.setTextVisible(True)
         layout.addWidget(self.progress_bar)
 
-        self.current_file_label = QLabel("Preparing...")
-        self.current_file_label.setWordWrap(True)
-        self.current_file_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.current_file_label.setStyleSheet("color: #808080; font-size: 10px;")
-        layout.addWidget(self.current_file_label)
-
-        button_layout = QHBoxLayout()
         self.cancel_button = QPushButton("Cancel")
         self.cancel_button.clicked.connect(self.on_cancel)
-        button_layout.addStretch()
-        button_layout.addWidget(self.cancel_button)
-        button_layout.addStretch()
-        layout.addLayout(button_layout)
+        cancel_layout = QHBoxLayout()
+        cancel_layout.addStretch()
+        cancel_layout.addWidget(self.cancel_button)
+        cancel_layout.addStretch()
+        layout.addLayout(cancel_layout)
 
         self.center_dialog()
 
@@ -61,30 +54,32 @@ class MoveProgressDialog(QDialog):
             y = self.parent().y() + (self.parent().height() - self.height()) // 2
             self.move(x, y)
 
-    def update_progress(self, current: int, total: int, current_file: str, space_freed: int):
+    def update_progress(self, current: int, total: int, space_freed: int):
+        if current < 0:
+            current = 0
+        if total <= 0:
+            total = 1
         if space_freed < 0:
             space_freed = 0
 
         if current > self.progress_bar.maximum():
             self.progress_bar.setMaximum(current)
-
         self.progress_bar.setValue(current)
 
         freed_str = self._format_size(space_freed)
         self.info_label.setText(f"Moving: {current} of {total} files ({freed_str} freed)")
 
-        filename = os.path.basename(current_file)
-        self.current_file_label.setText(f"Current: {filename}")
         QApplication.processEvents()
 
     def update_complete(self, moved: int, space_freed: int):
+        if moved < 0:
+            moved = 0
         if space_freed < 0:
             space_freed = 0
 
         self.progress_bar.setValue(moved)
         freed_str = self._format_size(space_freed)
         self.info_label.setText(f"Complete! Moved {moved} files, freed {freed_str}")
-        self.current_file_label.setText("Operation completed successfully")
         self.cancel_button.setText("Close")
         self.cancel_button.setEnabled(True)
 
@@ -103,9 +98,7 @@ class MoveProgressDialog(QDialog):
 
     @staticmethod
     def _format_size(size):
-        if size < 0:
-            return "0 B"
-        if size == 0:
+        if size <= 0:
             return "0 B"
 
         if size < 1024:
