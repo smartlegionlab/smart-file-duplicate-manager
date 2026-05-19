@@ -49,7 +49,7 @@ class ScanWorker(QThread):
     def _quick_hash(self, path):
         try:
             with open(path, 'rb') as f:
-                first_bytes = f.read(1024)
+                first_bytes = f.read(4096)
                 return hashlib.md5(first_bytes).hexdigest()
         except:
             return None
@@ -64,7 +64,7 @@ class ScanWorker(QThread):
             use_xxhash = False
         try:
             with open(path, 'rb') as f:
-                for chunk in iter(lambda: f.read(128 * 1024), b''):
+                for chunk in iter(lambda: f.read(1024 * 1024), b''):
                     if not self.is_running:
                         return None
                     hasher.update(chunk)
