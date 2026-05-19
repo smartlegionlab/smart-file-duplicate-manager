@@ -1,6 +1,5 @@
 # Copyright (©) 2026, Alexander Suvorov. All rights reserved.
 import os
-import json
 import subprocess
 import sys
 from pathlib import Path
@@ -19,7 +18,6 @@ from core.models.dupe_group import DuplicateGroup
 from core.models.file_info import FileInfo
 from core.ui.dark_theme import ModernStyle
 from core.ui.desktop_entry_dialog import DesktopEntryDialog
-from core.ui.move_worker import MoveWorker
 from core.ui.restore_dialog import RestoreDialog
 from core.ui.scan_worker import ScanWorker
 from core.ui.move_progress_dialog import MoveProgressDialog
@@ -62,15 +60,12 @@ class MainWindow(QMainWindow):
         self.setup_menu()
 
     def setup_application_icon(self):
-        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "icons",
-                                 "icon.png")
+        from pathlib import Path
+        project_root = Path(__file__).parent.parent
+        icon_path = project_root / "data" / "icons" / "icon.png"
 
-        if not os.path.exists(icon_path):
-            icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
-
-        if os.path.exists(icon_path):
-            icon = QIcon(icon_path)
-            self.setWindowIcon(icon)
+        if icon_path.exists():
+            self.setWindowIcon(QIcon(str(icon_path)))
 
     def create_desktop_entry(self):
         dialog = DesktopEntryDialog(self)
@@ -575,6 +570,11 @@ class MainWindow(QMainWindow):
         license_action.setShortcut(QKeySequence("Ctrl+Alt+L"))
         license_action.triggered.connect(self.show_license)
         help_menu.addAction(license_action)
+
+        disclaimer_action = QAction("&DISCLAIMER", self)
+        disclaimer_action.setShortcut(QKeySequence("Ctrl+D"))
+        disclaimer_action.triggered.connect(self.show_disclaimer)
+        help_menu.addAction(disclaimer_action)
 
     def browse_scan_folder(self):
         folder = QFileDialog.getExistingDirectory(
@@ -1092,60 +1092,8 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Error", f"Failed to create dated folder: {e}")
                 return
 
-        self.move_dialog = MoveProgressDialog(selected_files_count, selected_size, self)
-
-        self.move_worker = MoveWorker(
-            groups_with_selected,
-            target_folder,
-            self.state['dry_run']
-        )
-
-        self.move_worker.progress_updated.connect(self.move_dialog.update_progress)
-        self.move_worker.move_completed.connect(self.on_move_completed)
-        self.move_worker.move_error.connect(self.on_move_error)
-        self.move_dialog.cancelled.connect(self.move_worker.stop)
-
-        self.move_worker.start()
-        self.move_dialog.exec()
-
-    def on_move_completed(self, moved_count, space_freed, errors):
-        if space_freed < 0:
-            space_freed = 0
-            for group in self.state['groups']:
-                for file in group.files:
-                    if hasattr(file, 'selected') and file.selected and not file.is_main:
-                        if hasattr(file, 'size') and file.size > 0:
-                            space_freed += file.size
-
-        if hasattr(self, 'move_dialog') and self.move_dialog:
-            self.move_dialog.update_complete(moved_count, max(0, space_freed))
-
-            from PyQt6.QtCore import QTimer
-            QTimer.singleShot(1500, self.move_dialog.accept)
-
-        result_msg = f"Files moved: {moved_count}\nSpace freed: {self.format_size(max(0, space_freed))}"
-
-        if self.state['dry_run']:
-            result_msg = f"TEST MODE - no files were actually moved\n\n{result_msg}"
-
-        if errors:
-            result_msg += "\n\nErrors:\n" + "\n".join(errors[:10])
-            if len(errors) > 10:
-                result_msg += f"\n... and {len(errors) - 10} more errors"
-
-        QMessageBox.information(self, "Move Complete", result_msg)
-        self.status_label.setText(f"Moved {moved_count} files, freed {self.format_size(max(0, space_freed))}")
-
-        self.reset_all()
-
-        self.move_worker = None
-        self.move_dialog = None
-
-    def on_move_error(self, error_msg):
-        self.move_dialog.close()
-        QMessageBox.critical(self, "Move Error", f"An error occurred during move:\n{error_msg}")
-        self.move_worker = None
-        self.move_dialog = None
+        dialog = MoveProgressDialog(groups_with_selected, target_folder, self.state['dry_run'], self)
+        dialog.exec()
 
     def open_dupes_folder(self):
         folder = self.state['dupes_folder']
@@ -1320,23 +1268,65 @@ class MainWindow(QMainWindow):
 
         dialog.exec()
 
-    def load_license_from_file(self):
-        try:
-            possible_paths = [
-                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'LICENSE'),
-                os.path.join(os.path.dirname(os.path.dirname(__file__)), 'LICENSE'),
-                os.path.join(os.path.dirname(__file__), 'LICENSE'),
-                os.path.join(os.getcwd(), 'LICENSE')
-            ]
+    def show_disclaimer(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("DISCLAIMER")
+        dialog.setMinimumSize(600, 500)
 
-            for path in possible_paths:
-                if os.path.exists(path):
-                    with open(path, 'r', encoding='utf-8') as f:
-                        return f.read()
+        layout = QVBoxLayout(dialog)
 
-            return None
-        except Exception:
-            return None
+        title = QLabel("DISCLAIMER")
+        title.setStyleSheet("""
+                    QLabel {
+                        color: #2a82da;
+                    }
+                """)
+        title_font = QFont()
+        title_font.setPointSize(14)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title)
+
+        text_edit = QTextEdit()
+        text_edit.setReadOnly(True)
+
+        disclaimer_text = self.load_disclaimer_from_file()
+        if disclaimer_text:
+            # Используем setMarkdown вместо setPlainText
+            text_edit.setMarkdown(disclaimer_text)
+        else:
+            text_edit.setMarkdown(self.config.disclaimer_text)
+
+        text_edit.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
+        text_edit.setMinimumHeight(350)
+        layout.addWidget(text_edit)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        button_box.accepted.connect(dialog.accept)
+        layout.addWidget(button_box)
+
+        dialog.exec()
+
+    @staticmethod
+    def load_license_from_file():
+        from pathlib import Path
+        project_root = Path(__file__).parent.parent
+        license_path = project_root / "LICENSE"
+
+        if license_path.exists():
+            return license_path.read_text(encoding='utf-8')
+        return None
+
+    @staticmethod
+    def load_disclaimer_from_file():
+        from pathlib import Path
+        project_root = Path(__file__).parent.parent
+        disclaimer_path = project_root / "DISCLAIMER.md"
+
+        if disclaimer_path.exists():
+            return disclaimer_path.read_text(encoding='utf-8')
+        return None
 
     @staticmethod
     def format_size(size):

@@ -1,4 +1,4 @@
-# Smart File Duplicate Manager <sup>v1.2.5</sup>
+# Smart File Duplicate Manager <sup>v1.2.6</sup>
 
 **Smart File Duplicate Manager** is an app for finding and managing duplicate files. It's written on Python using PyQt6.
 
@@ -148,6 +148,7 @@ The application allows you to create desktop entries directly from the menu:
 | Documentation            | F1           |
 | Report Issue             | Ctrl+Shift+I |
 | License                  | Ctrl+Alt+L   |
+| Disclaimer               | Ctrl+D       |
 
 ---
 
