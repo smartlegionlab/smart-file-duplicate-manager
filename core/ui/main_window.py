@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
     QGroupBox, QGridLayout, QScrollArea, QSpinBox, QDialog,
     QTextEdit, QDialogButtonBox, QMenu, QApplication, QFrame
 )
-from PyQt6.QtCore import Qt, QRegularExpression, QPoint, QSettings
+from PyQt6.QtCore import Qt, QRegularExpression, QPoint
 from PyQt6.QtGui import QFont, QAction, QKeySequence, QRegularExpressionValidator, QColor, QIcon
 
 from core.models.config import Config
@@ -22,8 +22,11 @@ from core.models.dupe_group import DuplicateGroup
 from core.models.file_info import FileInfo
 from core.ui.dark_theme import ModernStyle
 from core.ui.desktop_entry_dialog import DesktopEntryDialog
+from core.ui.move_worker import MoveWorker
 from core.ui.restore_dialog import RestoreDialog
 from core.ui.scan_worker import ScanWorker
+
+from core.ui.move_progress_dialog import MoveProgressDialog
 
 
 class MainWindow(QMainWindow):
@@ -117,7 +120,7 @@ class MainWindow(QMainWindow):
         self.main_splitter.setStyleSheet("QSplitter::handle { background-color: #404040; }")
 
         left_panel = self.create_left_panel()
-        left_panel.setMinimumWidth(250)
+        left_panel.setMinimumWidth(350)
         left_panel.setMaximumWidth(400)
         self.main_splitter.addWidget(left_panel)
 
@@ -137,7 +140,7 @@ class MainWindow(QMainWindow):
 
         self.main_splitter.addWidget(self.right_splitter)
 
-        self.main_splitter.setSizes([300, 600])
+        self.main_splitter.setSizes([350, 600])
 
         main_layout.addWidget(self.main_splitter, 1)
 
@@ -149,6 +152,7 @@ class MainWindow(QMainWindow):
 
     def create_left_panel(self):
         panel = QWidget()
+        panel.setMinimumWidth(350)
         layout = QVBoxLayout(panel)
         layout.setSpacing(10)
         layout.setContentsMargins(5, 5, 5, 5)
@@ -1065,104 +1069,89 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Info", "No duplicates to process")
             return
 
-        total_selected = 0
-        for group in self.state['groups']:
-            for file in group.files:
-                if file.selected:
-                    total_selected += 1
+        selected_files_count = 0
+        selected_size = 0
+        groups_with_selected = []
 
-        if total_selected == 0:
+        for group in self.state['groups']:
+            has_selected = False
+            for file in group.files:
+                if file.selected and not file.is_main:
+                    selected_files_count += 1
+                    selected_size += file.size
+                    has_selected = True
+            if has_selected:
+                groups_with_selected.append(group)
+
+        if selected_files_count == 0:
             QMessageBox.information(
                 self, "Info",
                 "No files selected for processing. Use 'Select All' button or manually select files."
             )
             return
 
-        action_name = "Move"
-        action_past = "moved"
+        if not os.path.exists(self.state['dupes_folder']):
+            try:
+                os.makedirs(self.state['dupes_folder'])
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to create duplicates folder: {e}")
+                return
 
-        reply = QMessageBox.question(
-            self, f"Confirm {action_name}",
-            f"{action_name} {total_selected} selected duplicate files?\n\n"
-            f"Files will be {action_past} to: {self.state['dupes_folder']}",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        if reply != QMessageBox.StandardButton.Yes:
-            return
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        target_folder = os.path.join(self.state['dupes_folder'], timestamp)
 
-        target_folder = None
         if not self.state['dry_run']:
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            target_folder = os.path.join(self.state['dupes_folder'], timestamp)
             try:
                 os.makedirs(target_folder, exist_ok=True)
-            except OSError as e:
+            except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to create dated folder: {e}")
                 return
 
-        processed = 0
-        saved = 0
-        errors = []
-        moved_files = []
+        self.move_dialog = MoveProgressDialog(selected_files_count, selected_size, self)
 
-        for group in self.state['groups']:
-            main_file = group.main_file or self.select_main_file(group.files)
-
-            for i, file in enumerate(group.files):
-                if file.path == main_file.path or not file.selected:
-                    continue
-
-                if not self.state['dry_run']:
-                    try:
-                        ext = os.path.splitext(main_file.path)[1]
-                        base = os.path.splitext(os.path.basename(main_file.path))[0]
-                        new_name = f"{base}_{i + 1}{ext}"
-                        new_path = os.path.join(target_folder, new_name)
-
-                        counter = 1
-                        while os.path.exists(new_path):
-                            new_name = f"{base}_{i + 1}_{counter}{ext}"
-                            new_path = os.path.join(target_folder, new_name)
-                            counter += 1
-
-                        os.rename(file.path, new_path)
-
-                        moved_files.append({
-                            'original_path': file.path,
-                            'new_path': new_path,
-                            'size': file.size,
-                            'group_hash': group.hash,
-                            'timestamp': datetime.now().isoformat()
-                        })
-
-                        processed += 1
-                        saved += group.size
-
-                    except (OSError, IOError) as e:
-                        errors.append(f"{file.name}: {e}")
-
-        log_file = None
-        if moved_files and not self.state['dry_run']:
-            log_file = self.save_move_log(moved_files, target_folder)
-
-        result_msg = (
-            f"Files {action_past}: {processed}\n"
-            f"Space freed: {self.format_size(saved)}"
+        self.move_worker = MoveWorker(
+            groups_with_selected,
+            target_folder,
+            self.state['dry_run']
         )
 
-        if log_file:
-            result_msg += f"\n\nMove log saved to:\n{log_file}"
+        self.move_worker.progress_updated.connect(self.move_dialog.update_progress)
+        self.move_worker.move_completed.connect(self.on_move_completed)
+        self.move_worker.move_error.connect(self.on_move_error)
+        self.move_dialog.cancelled.connect(self.move_worker.stop)
 
-        if errors:
-            result_msg += "\n\nErrors:\n" + "\n".join(errors)
+        self.move_worker.start()
+        self.move_dialog.exec()
+
+    def on_move_completed(self, moved_count, space_freed, errors):
+        self.move_dialog.update_complete(moved_count, space_freed)
+
+        from PyQt6.QtCore import QTimer
+        QTimer.singleShot(1500, self.move_dialog.accept)
+
+        result_msg = f"Files moved: {moved_count}\nSpace freed: {self.format_size(space_freed)}"
 
         if self.state['dry_run']:
-            result_msg = f"TEST MODE - no files were actually {action_past}\n\n{result_msg}"
+            result_msg = f"TEST MODE - no files were actually moved\n\n{result_msg}"
 
-        QMessageBox.information(self, "Done", result_msg)
-        self.status_label.setText(f"Processing complete. {processed} files {action_past}.")
+        if errors:
+            result_msg += "\n\nErrors:\n" + "\n".join(errors[:10])
+            if len(errors) > 10:
+                result_msg += f"\n... and {len(errors) - 10} more errors"
+
+        QMessageBox.information(self, "Move Complete", result_msg)
+        self.status_label.setText(f"Moved {moved_count} files, freed {self.format_size(space_freed)}")
 
         self.reset_all()
+
+        self.move_worker = None
+        self.move_dialog = None
+
+    def on_move_error(self, error_msg):
+        self.move_dialog.close()
+        QMessageBox.critical(self, "Move Error", f"An error occurred during move:\n{error_msg}")
+        self.move_worker = None
+        self.move_dialog = None
 
     def open_dupes_folder(self):
         folder = self.state['dupes_folder']
